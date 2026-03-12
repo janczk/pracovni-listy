@@ -79,6 +79,13 @@ export const sampleTasks: WorksheetTask[] = [
     answer: "Podporoval stavby a zvelebování města.",
     explanation: "Praha za něj rostla a stala se centrem říše.",
   },
+  {
+    id: "t6",
+    type: "draw_picture",
+    question: "Nakresli jednoduché schéma znázorňující vztah Karla IV. k Praze (např. stavby, univerzita).",
+    answer: "",
+    options: [],
+  },
 ];
 
 /** Úlohy seskupené podle typu pro generování více otázek jednoho typu */
@@ -88,6 +95,7 @@ export const sampleTasksByType: Record<TaskType, WorksheetTask[]> = {
   fill_in: sampleTasks.filter((t) => t.type === "fill_in"),
   short_answer: sampleTasks.filter((t) => t.type === "short_answer"),
   reading_questions: sampleTasks.filter((t) => t.type === "reading_questions"),
+  draw_picture: sampleTasks.filter((t) => t.type === "draw_picture"),
 };
 
 export function createMockWorksheet(overrides: Partial<Worksheet> = {}): Worksheet {
@@ -102,7 +110,7 @@ export function createMockWorksheet(overrides: Partial<Worksheet> = {}): Workshe
     instructions: "Přečtěte si každou otázku. Odpovědi pište do vyznačeného prostoru. U výběru z možností zakroužkujte písmeno správné odpovědi (A, B, C, D).",
     difficulty: "normal",
     useCase: "revision",
-    taskTypes: ["multiple_choice", "true_false", "fill_in", "short_answer", "reading_questions"],
+    taskTypes: ["multiple_choice", "true_false", "fill_in", "short_answer", "reading_questions", "draw_picture"],
     tasks: sampleTasks.slice(0, 5).map((t) => ({ ...t, id: `task-${Date.now()}-${t.id}` })),
     answersVisible: false,
     createdAt: new Date().toISOString(),

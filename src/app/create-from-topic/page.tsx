@@ -27,6 +27,7 @@ const defaultTaskTypeCounts: TopicInput["taskTypeCounts"] = {
   short_answer: 1,
   fill_in: 0,
   reading_questions: 0,
+  draw_picture: 0,
 };
 
 const defaultInput: TopicInput = {

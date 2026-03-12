@@ -110,6 +110,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e2e8f0",
   },
+  /** Větší prostor pro nákres u úlohy typu Nakresli obrázek */
+  drawingSpace: {
+    minHeight: 200,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    borderStyle: "dashed",
+  },
   answerKeyTitle: {
     fontSize: 14,
     marginTop: 24,
@@ -177,7 +185,9 @@ export function WorksheetPdfDocument({
           {worksheet.tasks.map((task, index) => (
             <Text key={task.id} style={styles.answerItem}>
               {`${index + 1}. ${
-                task.options && task.options.length > 0
+                task.type === "draw_picture"
+                  ? "—"
+                  : task.options && task.options.length > 0
                   ? (() => {
                       const idx = getCorrectOptionIndex(task.options, task.answer);
                       if (idx >= 0)
@@ -248,6 +258,9 @@ export function WorksheetPdfDocument({
             )}
             {(task.type === "short_answer" || task.type === "reading_questions") && (
               <View style={styles.writingSpace} />
+            )}
+            {task.type === "draw_picture" && (
+              <View style={styles.drawingSpace} />
             )}
           </View>
         ))}

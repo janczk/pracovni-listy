@@ -134,7 +134,9 @@ export function WorksheetPreview({
                 <div className="mt-2 pt-2 border-t border-slate-200">
                   <span className="text-xs font-semibold text-slate-600">{TEXTS.answer}: </span>
                   <span className="text-sm text-slate-700">
-                    {task.options && task.options.length > 0
+                    {task.type === "draw_picture"
+                      ? "(nákres)"
+                      : task.options && task.options.length > 0
                       ? (() => {
                           const idx = getCorrectOptionIndex(task.options, task.answer);
                           if (idx >= 0)
@@ -179,7 +181,9 @@ export function WorksheetPreview({
             <ol className="list-decimal list-inside mt-2 space-y-1 text-sm text-slate-700">
               {worksheet.tasks.map((task, i) => (
                 <li key={task.id}>
-                  {task.options && task.options.length > 0
+                  {task.type === "draw_picture"
+                    ? "—"
+                    : task.options && task.options.length > 0
                     ? (() => {
                         const idx = getCorrectOptionIndex(task.options, task.answer);
                         if (idx >= 0)

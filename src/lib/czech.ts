@@ -122,7 +122,13 @@ export const TASK_TYPES: { value: TaskType; label: string }[] = [
   { value: "true_false", label: "Pravda / Nepravda" },
   { value: "short_answer", label: "Krátká odpověď" },
   { value: "reading_questions", label: "Otázky k textu" },
+  { value: "draw_picture", label: "Nakresli obrázek" },
 ];
+
+/** Typy úloh pro generování z učebnice (bez „Nakresli obrázek“, ten je jen z tématu). */
+export const TASK_TYPES_FOR_TEXTBOOK: { value: TaskType; label: string }[] = TASK_TYPES.filter(
+  (t) => t.value !== "draw_picture"
+);
 
 export const DIFFICULTIES: { value: Difficulty; label: string }[] = [
   { value: "easy", label: "Lehká" },
@@ -158,6 +164,7 @@ export const TASK_TYPE_LABELS: Record<TaskType, string> = {
   true_false: "Pravda / Nepravda",
   short_answer: "Krátká odpověď",
   reading_questions: "Otázky k textu",
+  draw_picture: "Nakresli obrázek",
 };
 
 export const SOURCE_TYPE_LABELS: Record<"topic" | "textbook", string> = {

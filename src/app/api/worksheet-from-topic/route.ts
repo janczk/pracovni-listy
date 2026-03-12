@@ -49,7 +49,8 @@ export async function POST(req: Request) {
       (body.taskTypeCounts.true_false ?? 0) +
       (body.taskTypeCounts.fill_in ?? 0) +
       (body.taskTypeCounts.short_answer ?? 0) +
-      (body.taskTypeCounts.reading_questions ?? 0);
+      (body.taskTypeCounts.reading_questions ?? 0) +
+      (body.taskTypeCounts.draw_picture ?? 0);
 
     // Vždy generujeme běžný pracovní list. Verze pro SVP vzniká až v druhém kroku (worksheet-simplify-for-svp).
     const audienceInstruction = [
@@ -83,6 +84,7 @@ export async function POST(req: Request) {
                 "- fill_in: doplňovačka s jedním krátkým slovem nebo rokem.",
                 "- short_answer: krátká otevřená odpověď (1–2 věty).",
                 "- reading_questions: otázky k textu bez nutnosti dalšího textu.",
+                '- draw_picture: úloha, kde má žák něco NAKRESLIT (schéma, obrázek, náčrtek). Formuluj otázku tak, aby výstupem žáka byl nákres (např. "Nakresli jednoduché schéma fotosyntézy.", "Nakresli potravní řetězec v lese."). Pole "answer" neuváděj nebo nech prázdné – odpověď žáka je kresba.',
                 "",
                 "Odpověz jako validní JSON ve tvaru:",
                 '{ "tasks": [ { "type": "...", "question": "...", "options": ["A", "B"], "answer": "...", "explanation": "..." } ] }',
@@ -99,12 +101,12 @@ export async function POST(req: Request) {
     const jsonText = extractJsonFromText(rawText);
     const parsed = JSON.parse(jsonText) as GeminiResponse;
 
-    const tasks: WorksheetTask[] = (parsed.tasks ?? []).map((t, index) => ({
+    const tasks: WorksheetTask[] = (parsed.tasks ?? []).map((t) => ({
       id: uuidv4(),
       type: t.type,
       question: t.question,
       options: t.options,
-      answer: t.answer,
+      answer: t.type === "draw_picture" ? "" : t.answer,
       explanation: t.explanation,
     }));
 

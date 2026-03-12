@@ -52,6 +52,7 @@ export async function POST(req: Request) {
                 "Pravidla podle typu úlohy:",
                 '- pokud je typ "true_false", musíš vrátit úplně stejnou otázku jako zadal učitel a pole "answer" musí být pouze "true"/"false" (můžeš uvažovat, že "pravda"/"ano" = "true" a "nepravda"/"ne" = "false"); žádné pole options nepoužívej, nebo ho nech prázdné.',
                 '- pokud je typ "multiple_choice", v poli "options" vrať 3–4 textové možnosti bez písmen (bez "A)", "B)" atd.) a v poli "answer" vrať text správné možnosti přesně tak, jak je uveden v options.',
+                '- pokud je typ "draw_picture", formuluj otázku tak, aby žák měl něco nakreslit (schéma, obrázek). Pole "answer" nech prázdné řetězce "" a "options" neuváděj.',
                 "- u ostatních typů vrať krátký text odpovědi v poli answer.",
                 existing?.question
                   ? [
@@ -96,9 +97,13 @@ export async function POST(req: Request) {
       } else if (norm === "false" || norm === "nepravda" || norm === "ne") {
         answer = "false";
       } else {
-        // pokud je odpověď neurčitá, raději necháme false
         answer = "false";
       }
+      options = [];
+    }
+
+    if (type === "draw_picture") {
+      answer = "";
       options = [];
     }
 

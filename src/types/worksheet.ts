@@ -7,7 +7,8 @@ export type TaskType =
   | "multiple_choice"
   | "true_false"
   | "short_answer"
-  | "reading_questions";
+  | "reading_questions"
+  | "draw_picture";
 
 export type Difficulty = "easy" | "normal" | "hard";
 

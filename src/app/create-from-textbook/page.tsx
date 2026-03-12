@@ -14,7 +14,7 @@ import {
   SUBJECTS,
   GRADES,
   OUTPUT_TYPES,
-  TASK_TYPES,
+  TASK_TYPES_FOR_TEXTBOOK,
   DIFFICULTIES,
   USE_CASES,
 } from "@/lib/czech";
@@ -308,7 +308,7 @@ export default function CreateFromTextbookPage() {
             hint="U každého typu zadejte počet otázek (0 = nezařazovat)."
           >
             <div className="space-y-3">
-              {TASK_TYPES.map((t) => (
+              {TASK_TYPES_FOR_TEXTBOOK.map((t) => (
                 <div
                   key={t.value}
                   className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5"

@@ -58,6 +58,12 @@ function StudentBlock({
                 ))}
               </ul>
             )}
+            {task.type === "draw_picture" && (
+              <div
+                className="mt-3 min-h-[12rem] border border-dashed border-slate-300 rounded-lg"
+                aria-hidden="true"
+              />
+            )}
           </li>
         ))}
       </ol>
@@ -94,7 +100,9 @@ function TeacherBlock({
       <ol className="list-decimal list-inside space-y-2 text-slate-700 font-normal">
         {worksheet.tasks.map((task) => (
           <li key={task.id}>
-            {task.options && task.options.length > 0
+            {task.type === "draw_picture"
+              ? "—"
+              : task.options && task.options.length > 0
               ? (() => {
                   const idx = getCorrectOptionIndex(task.options, task.answer);
                   if (idx >= 0)

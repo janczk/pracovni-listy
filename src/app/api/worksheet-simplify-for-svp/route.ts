@@ -77,8 +77,9 @@ export async function POST(req: Request) {
                 "3) U pravda/nepravda: zachovej stejný smysl tvrzení a stejnou odpověď (true nebo false).",
                 "4) Počet úloh a jejich typy musí zůstat beze změny. Vrať přesně tolik úloh, kolik je vstupních, ve stejném pořadí.",
                 hasEmptyAnswer
-                  ? "5) U úloh, kde je správná odpověď prázdná, zjednoduš otázku a doplň vhodnou krátkou správnou odpověď v jednoduchém jazyce pro žáky se SVP."
+                  ? "5) U úloh, kde je správná odpověď prázdná (kromě draw_picture), zjednoduš otázku a doplň vhodnou krátkou správnou odpověď v jednoduchém jazyce pro žáky se SVP."
                   : "",
+                "6) U úloh typu draw_picture (nakresli obrázek) zjednoduš pouze znění otázky, pole answer nech prázdné.",
                 "",
                 "Běžný pracovní list (úlohy):",
                 tasksDescription,
@@ -120,8 +121,8 @@ export async function POST(req: Request) {
         id: original.id,
         type: original.type,
         question: (s?.question != null && String(s.question).trim() !== "" ? s.question : original.question) as string,
-        options: s?.options ?? original.options,
-        answer: s?.answer !== undefined && s?.answer !== "" ? s.answer : original.answer,
+        options: original.type === "draw_picture" ? [] : (s?.options ?? original.options),
+        answer: original.type === "draw_picture" ? "" : (s?.answer !== undefined && s?.answer !== "" ? s.answer : original.answer),
         explanation: s?.explanation ?? original.explanation,
       };
     });
