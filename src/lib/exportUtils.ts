@@ -42,7 +42,8 @@ export async function exportWorksheetPdf(
     "@/components/WorksheetPdfDocument"
   );
   const doc = React.createElement(WorksheetPdfDocument, { worksheet, variant });
-  const blob = await pdf(doc).toBlob();
+  // pdf() očekává ReactElement<DocumentProps>; naše komponenta vrací <Document>…</Document>, typově to odpovídá za běhu
+  const blob = await pdf(doc as React.ReactElement).toBlob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
