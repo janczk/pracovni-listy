@@ -40,7 +40,7 @@ export default function ResultPage() {
   const displayedWorksheet: Worksheet =
     previewVariant === "simplified" && simplifiedWorksheet ? simplifiedWorksheet : worksheet!;
 
-  /** Uloží změny. Při úpravě běžné verze a existující SVP verze znovu vygeneruje SVP z aktuálního listu (stejná pravidla jako při vytvoření). */
+  /** Uloží změny. Při úpravě běžné verze a existující SVP verze znovu vygeneruje SVP na pozadí (UI se neblokuje). */
   const persist = async (next: Worksheet) => {
     if (!worksheet) return;
     if (previewVariant === "simplified" && simplifiedWorksheet) {
@@ -50,17 +50,18 @@ export default function ResultPage() {
     }
     setWorksheet(next);
     if (simplifiedWorksheet) {
+      saveWorksheetToSession(next, simplifiedWorksheet);
       setSvpSyncError(null);
-      try {
-        const simplified = await simplifyWorksheetForSvp(next);
-        simplified.answersVisible = next.answersVisible;
-        setSimplifiedWorksheet(simplified);
-        saveWorksheetToSession(next, simplified);
-      } catch (err) {
-        console.error("SVP sync failed:", err);
-        setSvpSyncError("Verze pro SVP se nepodařila aktualizovat. Běžná verze je uložená.");
-        saveWorksheetToSession(next, simplifiedWorksheet);
-      }
+      simplifyWorksheetForSvp(next)
+        .then((simplified) => {
+          simplified.answersVisible = next.answersVisible;
+          setSimplifiedWorksheet(simplified);
+          saveWorksheetToSession(next, simplified);
+        })
+        .catch((err) => {
+          console.error("SVP sync failed:", err);
+          setSvpSyncError("Verze pro SVP se nepodařila aktualizovat. Běžná verze je uložená.");
+        });
     } else {
       saveWorksheetToSession(next, null);
     }
@@ -110,7 +111,7 @@ export default function ResultPage() {
       await persist({ ...displayedWorksheet, tasks });
     } catch (err) {
       console.error("Regenerate task failed:", err);
-      setRegenError("Regenerace této úlohy se nezdařila. Zkuste to prosím znovu.");
+      setRegenError("Generování této úlohy se nezdařilo. Zkuste to prosím znovu.");
     } finally {
       setRegeneratingId(null);
     }

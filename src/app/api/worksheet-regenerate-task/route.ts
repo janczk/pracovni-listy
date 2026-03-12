@@ -119,7 +119,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Gemini regenerate-task failed:", error);
     return NextResponse.json(
-      { error: "Regenerace úlohy se nezdařila. Zkuste to prosím znovu." },
+      { error: "Generování úlohy se nezdařilo. Zkuste to prosím znovu." },
       { status: 500 }
     );
   }
