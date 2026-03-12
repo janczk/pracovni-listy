@@ -20,7 +20,7 @@ const TASK_TO_QUIZ_TYPE: Record<
  * Export worksheet as quiz JSON (questions, options, correct answers, order).
  */
 export function worksheetToQuizExport(worksheet: Worksheet): QuizExport {
-  const questions: QuizQuestion[] = worksheet.tasks.flatMap((task, index) => {
+  const questions = worksheet.tasks.flatMap((task, index): QuizQuestion[] => {
     const quizType = TASK_TO_QUIZ_TYPE[task.type];
     if (!quizType) return [];
     const correctAnswer = Array.isArray(task.answer)
