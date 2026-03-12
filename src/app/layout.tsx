@@ -20,8 +20,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="cs" className={plusJakarta.variable}>
-      <body className="min-h-screen bg-gradient-to-b from-slate-50 to-primary-50/30 text-slate-800 antialiased font-sans">
-        <header className="no-print border-b border-slate-200/80 bg-white/80 backdrop-blur-sm">
+      <body className="min-h-screen bg-slate-50 text-slate-800 antialiased font-sans">
+        <header className="no-print border-b border-slate-200 bg-white">
           <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
             <img
               src="/logo.png"
@@ -33,7 +33,9 @@ export default function RootLayout({
             </span>
           </div>
         </header>
-        {children}
+        <div className="min-h-[calc(100vh-3.5rem)]">
+          {children}
+        </div>
       </body>
     </html>
   );

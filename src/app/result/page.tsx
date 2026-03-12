@@ -18,8 +18,12 @@ import { regenerateSingleTask, generateWorksheetFromTopic } from "@/services/wor
 import type { Worksheet, WorksheetTask } from "@/types/worksheet";
 import type { TopicInput } from "@/types/inputs";
 
+type PreviewVariant = "normal" | "simplified";
+
 export default function ResultPage() {
   const [worksheet, setWorksheet] = useState<Worksheet | null>(null);
+  const [simplifiedWorksheet, setSimplifiedWorksheet] = useState<Worksheet | null>(null);
+  const [previewVariant, setPreviewVariant] = useState<PreviewVariant>("normal");
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [regeneratingAll, setRegeneratingAll] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
@@ -27,57 +31,67 @@ export default function ResultPage() {
   const [regenError, setRegenError] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = getWorksheetFromSession();
-    setWorksheet(stored);
+    const { worksheet: w, simplifiedWorksheet: sw } = getWorksheetFromSession();
+    setWorksheet(w);
+    setSimplifiedWorksheet(sw);
   }, []);
 
+  const displayedWorksheet: Worksheet =
+    previewVariant === "simplified" && simplifiedWorksheet ? simplifiedWorksheet : worksheet!;
+
   const persist = (next: Worksheet) => {
-    setWorksheet(next);
-    saveWorksheetToSession(next);
+    if (!worksheet) return;
+    if (previewVariant === "simplified" && simplifiedWorksheet) {
+      setSimplifiedWorksheet(next);
+      saveWorksheetToSession(worksheet, next);
+    } else {
+      setWorksheet(next);
+      saveWorksheetToSession(next, simplifiedWorksheet);
+    }
   };
 
   const handleToggleAnswers = () => {
-    if (!worksheet) return;
-    persist({ ...worksheet, answersVisible: !worksheet.answersVisible });
+    if (!displayedWorksheet) return;
+    persist({ ...displayedWorksheet, answersVisible: !displayedWorksheet.answersVisible });
   };
 
   const handleEditTitle = (title: string) => {
-    if (!worksheet) return;
-    persist({ ...worksheet, title });
+    if (!displayedWorksheet) return;
+    persist({ ...displayedWorksheet, title });
   };
 
   const handleEditInstructions = (instructions: string) => {
-    if (!worksheet) return;
-    persist({ ...worksheet, instructions });
+    if (!displayedWorksheet) return;
+    persist({ ...displayedWorksheet, instructions });
   };
 
   const handleEditTask = (
     taskId: string,
     updates: Partial<WorksheetTask>
   ) => {
-    if (!worksheet) return;
-    const tasks = worksheet.tasks.map((t) =>
+    if (!displayedWorksheet) return;
+    const tasks = displayedWorksheet.tasks.map((t) =>
       t.id === taskId ? { ...t, ...updates } : t
     );
-    persist({ ...worksheet, tasks });
+    persist({ ...displayedWorksheet, tasks });
   };
 
   const handleDeleteTask = (taskId: string) => {
-    if (!worksheet) return;
-    const tasks = worksheet.tasks.filter((t) => t.id !== taskId);
-    persist({ ...worksheet, tasks });
+    if (!displayedWorksheet) return;
+    const tasks = displayedWorksheet.tasks.filter((t) => t.id !== taskId);
+    persist({ ...displayedWorksheet, tasks });
   };
 
   const handleRegenerateTask = async (taskId: string) => {
-    if (!worksheet) return;
+    if (!displayedWorksheet) return;
     setRegeneratingId(taskId);
     setRegenError(null);
     try {
-      const newTask = await regenerateSingleTask(worksheet, taskId);
-      const tasks = worksheet.tasks.map((t) =>
+      const newTask = await regenerateSingleTask(displayedWorksheet, taskId);
+      const tasks = displayedWorksheet.tasks.map((t) =>
         t.id === taskId ? newTask : t
       );
-      persist({ ...worksheet, tasks });
+      persist({ ...displayedWorksheet, tasks });
     } catch (err) {
       console.error("Regenerate task failed:", err);
       setRegenError("Regenerace této úlohy se nezdařila. Zkuste to prosím znovu.");
@@ -87,7 +101,7 @@ export default function ResultPage() {
   };
 
   const handleAddTask = () => {
-    if (!worksheet) return;
+    if (!displayedWorksheet) return;
     const newTask: WorksheetTask = {
       id: `manual-${Date.now()}`,
       type: "short_answer",
@@ -95,8 +109,8 @@ export default function ResultPage() {
       answer: "",
       options: [],
     };
-    const tasks = [...worksheet.tasks, newTask];
-    persist({ ...worksheet, tasks });
+    const tasks = [...displayedWorksheet.tasks, newTask];
+    persist({ ...displayedWorksheet, tasks });
   };
 
   const handleRegenerateAll = async () => {
@@ -149,6 +163,11 @@ export default function ResultPage() {
     setExportingPdf(true);
     try {
       await exportWorksheetPdf(worksheet, variant);
+      if (simplifiedWorksheet) {
+        // Krátké zpoždění, aby prohlížeč nezablokoval druhé stažení
+        await new Promise((r) => setTimeout(r, 400));
+        await exportWorksheetPdf(simplifiedWorksheet, variant, "zjednodusena");
+      }
     } catch (err) {
       console.error("Export PDF failed:", err);
       setPdfError(
@@ -175,7 +194,12 @@ export default function ResultPage() {
   return (
     <main className="min-h-screen print:block">
       {/* Print-only content: outside no-print so it stays visible when printing */}
-      {worksheet && <PrintWorksheet worksheet={worksheet} />}
+      {worksheet && (
+        <PrintWorksheet
+          worksheet={worksheet}
+          simplifiedWorksheet={simplifiedWorksheet}
+        />
+      )}
 
       <div className="no-print max-w-6xl mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-8">
@@ -235,6 +259,11 @@ export default function ResultPage() {
               <h2 className="text-xs font-semibold text-primary-600 uppercase tracking-wider">
                 {TEXTS.export}
               </h2>
+              {simplifiedWorksheet && (
+                <p className="mt-1 text-xs text-slate-600">
+                  K dispozici jsou obě verze: běžná a zjednodušená (SVP). Export i tisk vyhotoví obě sady.
+                </p>
+              )}
               {pdfError && (
                 <p className="mt-2 text-sm text-red-600" role="alert">
                   {pdfError}
@@ -248,6 +277,7 @@ export default function ResultPage() {
                   disabled={exportingPdf}
                 >
                   {exportingPdf ? "Generuji PDF…" : TEXTS.exportPdfStudent}
+                  {simplifiedWorksheet && " (2 soubory)"}
                 </Button>
                 <Button
                   variant="outline"
@@ -256,12 +286,15 @@ export default function ResultPage() {
                   disabled={exportingPdf}
                 >
                   {exportingPdf ? "Generuji PDF…" : TEXTS.exportPdfTeacher}
+                  {simplifiedWorksheet && " (2 soubory)"}
                 </Button>
                 <Button variant="outline" size="sm" onClick={handlePrintStudent}>
                   {TEXTS.printStudent}
+                  {simplifiedWorksheet && " (obě verze)"}
                 </Button>
                 <Button variant="outline" size="sm" onClick={handlePrintTeacher}>
                   {TEXTS.printTeacher}
+                  {simplifiedWorksheet && " (obě verze)"}
                 </Button>
               </div>
             </div>
@@ -269,9 +302,35 @@ export default function ResultPage() {
 
           {/* Right: worksheet preview / editor */}
           <div className="flex-1 min-w-0">
+            {simplifiedWorksheet && (
+              <div className="mb-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPreviewVariant("normal")}
+                  className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                    previewVariant === "normal"
+                      ? "bg-primary-600 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  Běžná verze
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewVariant("simplified")}
+                  className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                    previewVariant === "simplified"
+                      ? "bg-primary-600 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  Zjednodušená verze (SVP)
+                </button>
+              </div>
+            )}
             <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-card sm:p-8">
               <WorksheetPreview
-                worksheet={worksheet}
+                worksheet={displayedWorksheet}
                 onToggleAnswers={handleToggleAnswers}
                 onEditTitle={handleEditTitle}
                 onEditInstructions={handleEditInstructions}

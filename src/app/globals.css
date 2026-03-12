@@ -7,8 +7,15 @@
   input[type="number"],
   select,
   textarea {
-    @apply rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 transition-shadow focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20;
+    @apply rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 transition-shadow focus:outline-none;
     box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+  }
+  input[type="text"]:focus,
+  input[type="number"]:focus,
+  select:focus,
+  textarea:focus {
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 2px rgb(20 184 166 / 0.2);
   }
   input::placeholder,
   textarea::placeholder {
@@ -26,26 +33,36 @@
   .no-print {
     display: none !important;
   }
+  /* Běžná + případná zjednodušená verze pro žáky */
   body.print-student #print-area-student,
-  body.print-student #print-area-student * {
+  body.print-student #print-area-student *,
+  body.print-student #print-area-student-simplified,
+  body.print-student #print-area-student-simplified * {
     visibility: visible;
   }
-  body.print-student #print-area-student {
+  body.print-student #print-area-student,
+  body.print-student #print-area-student-simplified {
     display: block !important;
-    position: absolute;
-    left: 0;
-    top: 0;
+    position: static;
     width: 100%;
+  }
+  body.print-student #print-area-student-simplified {
+    page-break-before: always;
+  }
+  /* Běžná + případná zjednodušená verze – klíč pro učitele */
+  body.print-teacher #print-area-teacher,
+  body.print-teacher #print-area-teacher *,
+  body.print-teacher #print-area-teacher-simplified,
+  body.print-teacher #print-area-teacher-simplified * {
+    visibility: visible;
   }
   body.print-teacher #print-area-teacher,
-  body.print-teacher #print-area-teacher * {
-    visibility: visible;
-  }
-  body.print-teacher #print-area-teacher {
+  body.print-teacher #print-area-teacher-simplified {
     display: block !important;
-    position: absolute;
-    left: 0;
-    top: 0;
+    position: static;
     width: 100%;
+  }
+  body.print-teacher #print-area-teacher-simplified {
+    page-break-before: always;
   }
 }

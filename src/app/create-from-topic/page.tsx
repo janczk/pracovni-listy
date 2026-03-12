@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
 import { FormField } from "@/components/FormField";
-import { generateWorksheetFromTopic } from "@/services/worksheetGeneration";
+import { generateWorksheetFromTopic, simplifyWorksheetForSvp } from "@/services/worksheetGeneration";
 import { saveWorksheetToSession } from "@/lib/storage";
 import {
   TEXTS,
@@ -59,7 +59,7 @@ export default function CreateFromTopicPage() {
 
   const totalTasks = Object.values(input.taskTypeCounts || {}).reduce((a, b) => a + (b || 0), 0);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     if (!input.topic.trim()) {
@@ -72,9 +72,18 @@ export default function CreateFromTopicPage() {
     }
     setLoading(true);
     try {
-      const worksheet = await generateWorksheetFromTopic(input);
+      const worksheet = await generateWorksheetFromTopic({
+        ...input,
+        simplifiedVersion: false,
+      });
       worksheet.answersVisible = input.includeAnswers;
-      saveWorksheetToSession(worksheet);
+      if (input.simplifiedVersion) {
+        const simplifiedWorksheet = await simplifyWorksheetForSvp(worksheet);
+        simplifiedWorksheet.answersVisible = input.includeAnswers;
+        saveWorksheetToSession(worksheet, simplifiedWorksheet);
+      } else {
+        saveWorksheetToSession(worksheet);
+      }
       router.push("/result");
     } catch {
       setError(TEXTS.errorGenerationFailed);

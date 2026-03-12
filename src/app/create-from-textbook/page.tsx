@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
 import { FormField } from "@/components/FormField";
 import { extractSourceTextFromFiles } from "@/services/textExtraction";
-import { generateWorksheetFromSourceText } from "@/services/worksheetGeneration";
+import { generateWorksheetFromSourceText, simplifyWorksheetForSvp } from "@/services/worksheetGeneration";
 import { saveWorksheetToSession } from "@/lib/storage";
 import {
   TEXTS,
@@ -104,7 +104,7 @@ export default function CreateFromTextbookPage() {
     setError(null);
     setGenerating(true);
     try {
-      const input: TextbookInput = {
+      const baseInput: TextbookInput = {
         extractedText: text,
         outputType,
         schoolType,
@@ -116,9 +116,18 @@ export default function CreateFromTextbookPage() {
         useCase,
         simplifiedVersion,
       };
-      const worksheet = await generateWorksheetFromSourceText(input);
+      const worksheet = await generateWorksheetFromSourceText({
+        ...baseInput,
+        simplifiedVersion: false,
+      });
       worksheet.answersVisible = true;
-      saveWorksheetToSession(worksheet);
+      if (simplifiedVersion) {
+        const simplifiedWorksheet = await simplifyWorksheetForSvp(worksheet);
+        simplifiedWorksheet.answersVisible = true;
+        saveWorksheetToSession(worksheet, simplifiedWorksheet);
+      } else {
+        saveWorksheetToSession(worksheet);
+      }
       router.push("/result");
     } catch {
       setError(TEXTS.errorGenerationFailed);

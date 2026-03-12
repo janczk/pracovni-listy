@@ -13,11 +13,12 @@ import type { Worksheet, WorksheetTask } from "@/types/worksheet";
 import { TASK_TYPE_LABELS } from "@/lib/czech";
 import { formatOptionWithLabel, getCorrectOptionIndex, formatTrueFalseAnswer } from "@/lib/optionLabels";
 
-// Font s podporou češtiny (Latin Extended) – načítáme ze stejné domény, bez CORS
+// Arial (Liberation Sans) – plná podpora české diakritiky, metrická náhrada Arial
 Font.register({
-  family: "OpenSans",
+  family: "Arial",
   fonts: [
-    { src: "/fonts/open-sans-latin-ext-400.woff", fontWeight: 400 },
+    { src: "/fonts/LiberationSans-Regular.ttf", fontWeight: 400 },
+    { src: "/fonts/LiberationSans-Bold.ttf", fontWeight: 700 },
   ],
 });
 
@@ -35,11 +36,12 @@ const styles = StyleSheet.create({
   page: {
     padding: MARGIN,
     fontSize: 11,
-    fontFamily: "OpenSans",
+    fontFamily: "Arial",
   },
   title: {
     fontSize: 18,
     marginBottom: 4,
+    fontWeight: 700,
   },
   meta: {
     fontSize: 10,
@@ -115,6 +117,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: "#e2e8f0",
+    fontWeight: 700,
   },
   answerItem: {
     marginBottom: 4,
@@ -243,7 +246,7 @@ export function WorksheetPdfDocument({
                 <Text style={styles.trueFalseOptionNe}>Ne</Text>
               </View>
             )}
-            {(task.type === "short_answer" || task.type === "fill_in" || task.type === "reading_questions") && (
+            {(task.type === "short_answer" || task.type === "reading_questions") && (
               <View style={styles.writingSpace} />
             )}
           </View>

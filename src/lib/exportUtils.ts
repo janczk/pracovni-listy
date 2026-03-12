@@ -30,10 +30,12 @@ type PdfVariant = "student" | "teacher";
 
 /**
  * Generuje a stáhne PDF (A4). variant "student" = list pro žáky, "teacher" = klíč pro učitele.
+ * filenameSuffix přidá do názvu souboru (např. "zjednodusena").
  */
 export async function exportWorksheetPdf(
   worksheet: Worksheet,
-  variant: PdfVariant
+  variant: PdfVariant,
+  filenameSuffix?: string
 ): Promise<void> {
   if (typeof window === "undefined") return;
   const React = await import("react");
@@ -50,17 +52,20 @@ export async function exportWorksheetPdf(
     variant,
     logoUrl,
   });
-  // pdf() očekává ReactElement<DocumentProps>; naše komponenta vrací <Document>…</Document>, typově to odpovídá za běhu
   const blob = await pdf(doc as React.ReactElement).toBlob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download =
+  const base =
     variant === "student"
-      ? `pracovni-list-zaci-${worksheet.id}.pdf`
-      : `klic-odpovedi-ucitel-${worksheet.id}.pdf`;
+      ? `pracovni-list-zaci-${worksheet.id}`
+      : `klic-odpovedi-ucitel-${worksheet.id}`;
+  a.download = filenameSuffix ? `${base}-${filenameSuffix}.pdf` : `${base}.pdf`;
+  a.style.display = "none";
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 200);
 }
 
 /**
