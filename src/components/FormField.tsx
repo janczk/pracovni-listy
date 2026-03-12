@@ -7,8 +7,8 @@ interface FormFieldProps {
 
 export function FormField({ label, id, children, hint }: FormFieldProps) {
   return (
-    <div className="space-y-1">
-      <label htmlFor={id} className="block text-sm font-medium text-slate-700">
+    <div className="space-y-1.5">
+      <label htmlFor={id} className="block text-sm font-semibold text-slate-700">
         {label}
       </label>
       {children}

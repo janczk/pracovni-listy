@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/Button";
 
 export default function BetaGatePage() {
   const [code, setCode] = useState("");
@@ -45,8 +46,16 @@ export default function BetaGatePage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4 bg-slate-100">
-      <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-xl font-semibold text-slate-900">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-lg text-center">
+        <img
+          src="/logo.png"
+          alt="Logo"
+          className="mx-auto h-20 w-20 object-contain"
+        />
+        <p className="mt-4 text-sm font-semibold uppercase tracking-wider text-primary-600">
+          Generátor pracovních listů
+        </p>
+        <h1 className="mt-2 text-xl font-bold text-slate-900">
           Beta přístup
         </h1>
         <p className="mt-1 text-sm text-slate-600">
@@ -67,7 +76,7 @@ export default function BetaGatePage() {
           </div>
 
           <div>
-            <label htmlFor="code" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="code" className="block text-sm font-semibold text-slate-700">
               Beta kód
             </label>
             <input
@@ -78,8 +87,7 @@ export default function BetaGatePage() {
               onChange={(e) => setCode(e.target.value)}
               required
               autoComplete="off"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-              placeholder="např. beta-pl-001 (celý kód)"
+              className="mt-1.5 w-full"
             />
           </div>
 
@@ -89,13 +97,9 @@ export default function BetaGatePage() {
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-          >
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Ověřuji…" : "Vstoupit"}
-          </button>
+          </Button>
         </form>
       </div>
     </main>

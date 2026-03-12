@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  input[type="text"],
+  input[type="number"],
+  select,
+  textarea {
+    @apply rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 transition-shadow focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    @apply text-slate-400;
+  }
+  input[type="file"] {
+    @apply rounded-xl;
+  }
+}
+
 @media print {
   body * {
     visibility: hidden;

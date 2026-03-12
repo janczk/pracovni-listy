@@ -41,7 +41,15 @@ export async function exportWorksheetPdf(
   const { WorksheetPdfDocument } = await import(
     "@/components/WorksheetPdfDocument"
   );
-  const doc = React.createElement(WorksheetPdfDocument, { worksheet, variant });
+  const logoUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/logo.png`
+      : undefined;
+  const doc = React.createElement(WorksheetPdfDocument, {
+    worksheet,
+    variant,
+    logoUrl,
+  });
   // pdf() očekává ReactElement<DocumentProps>; naše komponenta vrací <Document>…</Document>, typově to odpovídá za běhu
   const blob = await pdf(doc as React.ReactElement).toBlob();
   const url = URL.createObjectURL(blob);

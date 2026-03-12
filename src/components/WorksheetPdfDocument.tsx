@@ -5,6 +5,7 @@ import {
   Page,
   Text,
   View,
+  Image,
   StyleSheet,
   Font,
 } from "@react-pdf/renderer";
@@ -119,6 +120,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontSize: 10,
   },
+  logo: {
+    width: 40,
+    height: 40,
+    marginBottom: 12,
+  },
 });
 
 function TaskLabelPdf({ type }: { type: WorksheetTask["type"] }) {
@@ -135,18 +141,26 @@ export type PdfVariant = "student" | "teacher";
  * PDF dokument – formát A4, pouze řádné písmo (bez tučného).
  * variant "student" = pracovní list pro žáky (bez klíče).
  * variant "teacher" = pouze klíč správných odpovědí pro učitele.
+ * logoUrl = absolutní URL loga (např. z window.location.origin + '/logo.png').
  */
 export function WorksheetPdfDocument({
   worksheet,
   variant,
+  logoUrl,
 }: {
   worksheet: Worksheet;
   variant: PdfVariant;
+  logoUrl?: string;
 }) {
+  const logo = logoUrl ? (
+    <Image source={{ uri: logoUrl }} style={styles.logo} />
+  ) : null;
+
   if (variant === "teacher") {
     return (
       <Document>
         <Page size="A4" style={styles.page}>
+          {logo}
           <Text style={styles.answerKeyTitle}>Klíč správných odpovědí</Text>
           <Text style={styles.meta}>
             {safeText(worksheet.title)}
@@ -195,6 +209,7 @@ export function WorksheetPdfDocument({
   return (
     <Document>
       <Page size="A4" style={styles.page}>
+        {logo}
         <Text style={styles.title}>{safeText(worksheet.title)}</Text>
         <Text style={styles.meta}>
           {safeText(worksheet.subject)}

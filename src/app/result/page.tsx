@@ -162,9 +162,9 @@ export default function ResultPage() {
   if (!worksheet) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center">
+        <div className="text-center rounded-2xl border border-slate-200/80 bg-white p-8 shadow-card">
           <p className="text-slate-600">{TEXTS.noWorksheet}</p>
-          <Link href="/" className="mt-4 inline-block text-slate-800 underline">
+          <Link href="/" className="mt-4 inline-block font-semibold text-primary-600 hover:text-primary-700">
             {TEXTS.goToHome}
           </Link>
         </div>
@@ -180,15 +180,15 @@ export default function ResultPage() {
       <div className="no-print max-w-6xl mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left: params + actions + exports */}
-          <aside className="lg:w-64 shrink-0 space-y-6">
+          <aside className="lg:w-72 shrink-0 space-y-6">
             <Link
               href="/"
-              className="text-sm text-slate-500 hover:text-slate-700"
+              className="text-sm font-medium text-slate-500 hover:text-primary-600 transition-colors"
             >
               {TEXTS.backToHome}
             </Link>
-            <div>
-              <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card">
+              <h2 className="text-xs font-semibold text-primary-600 uppercase tracking-wider">
                 {TEXTS.parameters}
               </h2>
               <ul className="mt-2 text-sm text-slate-600 space-y-1">
@@ -204,8 +204,8 @@ export default function ResultPage() {
                 <li>Zdroj: {SOURCE_TYPE_LABELS[worksheet.sourceType]}</li>
               </ul>
             </div>
-            <div>
-              <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card">
+              <h2 className="text-xs font-semibold text-primary-600 uppercase tracking-wider">
                 {TEXTS.actions}
               </h2>
               <div className="mt-2 flex flex-col gap-2">
@@ -231,8 +231,8 @@ export default function ResultPage() {
                 {regenError}
               </p>
             )}
-            <div>
-              <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card">
+              <h2 className="text-xs font-semibold text-primary-600 uppercase tracking-wider">
                 {TEXTS.export}
               </h2>
               {pdfError && (
@@ -269,7 +269,7 @@ export default function ResultPage() {
 
           {/* Right: worksheet preview / editor */}
           <div className="flex-1 min-w-0">
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-card sm:p-8">
               <WorksheetPreview
                 worksheet={worksheet}
                 onToggleAnswers={handleToggleAnswers}

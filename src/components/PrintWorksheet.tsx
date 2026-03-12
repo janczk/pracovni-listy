@@ -22,6 +22,7 @@ export function PrintWorksheet({ worksheet }: { worksheet: Worksheet }) {
         className="hidden p-8 max-w-none"
         aria-hidden="true"
       >
+        <img src="/logo.png" alt="" className="h-10 w-10 mb-3 object-contain" />
         <h1 className="text-2xl text-slate-900 mb-1 font-normal">
           {worksheet.title}
         </h1>
@@ -63,6 +64,7 @@ export function PrintWorksheet({ worksheet }: { worksheet: Worksheet }) {
         className="hidden p-8 max-w-none"
         aria-hidden="true"
       >
+        <img src="/logo.png" alt="" className="h-10 w-10 mb-3 object-contain" />
         <h1 className="text-xl text-slate-900 mb-2 font-normal">
           Klíč správných odpovědí
         </h1>

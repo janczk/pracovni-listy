@@ -88,22 +88,26 @@ export default function CreateFromTopicPage() {
       <div className="max-w-xl mx-auto px-4 py-8">
         <Link
           href="/"
-          className="text-sm text-slate-500 hover:text-slate-700 no-print"
+          className="text-sm font-medium text-slate-500 hover:text-primary-600 no-print transition-colors"
         >
           {TEXTS.backToHome}
         </Link>
-        <h1 className="mt-4 text-2xl font-bold text-slate-900">
+        <p className="mt-4 text-sm font-semibold uppercase tracking-wider text-primary-600">
+          {TEXTS.createFromTopic}
+        </p>
+        <h1 className="mt-1 text-2xl font-bold text-slate-900">
           {TEXTS.createFromTopicTitle}
         </h1>
         <p className="mt-1 text-slate-600">
           {TEXTS.createFromTopicDesc}
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+        <div className="mt-8 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-card sm:p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
           <FormField label={TEXTS.schoolType} id="schoolType">
             <select
               id="schoolType"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              className="w-full"
               value={input.schoolType}
               onChange={(e) =>
                 setInput((p) => ({ ...p, schoolType: e.target.value as TopicInput["schoolType"] }))
@@ -120,7 +124,7 @@ export default function CreateFromTopicPage() {
             <FormField label={TEXTS.subject} id="subject">
               <select
                 id="subject"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                className="w-full"
                 value={input.subject}
                 onChange={(e) =>
                   setInput((p) => ({ ...p, subject: e.target.value }))
@@ -136,7 +140,7 @@ export default function CreateFromTopicPage() {
             <FormField label={TEXTS.grade} id="grade">
               <select
                 id="grade"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                className="w-full"
                 value={input.grade}
                 onChange={(e) =>
                   setInput((p) => ({ ...p, grade: e.target.value }))
@@ -156,7 +160,7 @@ export default function CreateFromTopicPage() {
               id="classLabel"
               type="text"
               placeholder="např. 6.B"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              className="w-full"
               value={input.classLabel ?? ""}
               onChange={(e) =>
                 setInput((p) => ({ ...p, classLabel: e.target.value.trim() || undefined }))
@@ -167,7 +171,7 @@ export default function CreateFromTopicPage() {
           <FormField label={TEXTS.language} id="language">
             <select
               id="language"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              className="w-full"
               value={input.language}
               onChange={(e) =>
                 setInput((p) => ({ ...p, language: e.target.value }))
@@ -187,7 +191,7 @@ export default function CreateFromTopicPage() {
               type="text"
               required
               placeholder={TEXTS.placeholderTopic}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              className="w-full"
               value={input.topic}
               onChange={(e) =>
                 setInput((p) => ({ ...p, topic: e.target.value }))
@@ -198,7 +202,7 @@ export default function CreateFromTopicPage() {
           <FormField label={TEXTS.outputType} id="outputType">
             <select
               id="outputType"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              className="w-full"
               value={input.outputType}
               onChange={(e) =>
                 setInput((p) => ({
@@ -224,14 +228,14 @@ export default function CreateFromTopicPage() {
               {TASK_TYPES.map((t) => (
                 <div
                   key={t.value}
-                  className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white px-3 py-2"
+                  className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5"
                 >
-                  <span className="text-sm text-slate-800">{t.label}</span>
+                  <span className="text-sm font-medium text-slate-800">{t.label}</span>
                   <input
                     type="number"
                     min={0}
                     max={10}
-                    className="w-20 rounded border border-slate-300 px-2 py-1 text-center text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                    className="w-20 text-center"
                     value={input.taskTypeCounts?.[t.value] ?? 0}
                     onChange={(e) =>
                       setTaskTypeCount(t.value, Number(e.target.value) || 0)
@@ -246,7 +250,7 @@ export default function CreateFromTopicPage() {
           <FormField label={TEXTS.difficulty} id="difficulty">
               <select
                 id="difficulty"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                className="w-full"
                 value={input.difficulty}
                 onChange={(e) =>
                   setInput((p) => ({
@@ -266,7 +270,7 @@ export default function CreateFromTopicPage() {
           <FormField label={TEXTS.intendedUse} id="useCase">
             <select
               id="useCase"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              className="w-full"
               value={input.useCase}
               onChange={(e) =>
                 setInput((p) => ({
@@ -283,19 +287,19 @@ export default function CreateFromTopicPage() {
             </select>
           </FormField>
 
-          <div className="space-y-3">
-            <label className="flex items-center gap-2">
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <label className="flex cursor-pointer items-center gap-3">
               <input
                 type="checkbox"
                 checked={input.includeAnswers}
                 onChange={(e) =>
                   setInput((p) => ({ ...p, includeAnswers: e.target.checked }))
                 }
-                className="rounded border-slate-300 text-slate-800 focus:ring-slate-500"
+                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
               />
-              <span className="text-sm text-slate-700">{TEXTS.includeAnswers}</span>
+              <span className="text-sm font-medium text-slate-700">{TEXTS.includeAnswers}</span>
             </label>
-            <label className="flex items-center gap-2">
+            <label className="flex cursor-pointer items-center gap-3">
               <input
                 type="checkbox"
                 checked={input.simplifiedVersion}
@@ -305,9 +309,9 @@ export default function CreateFromTopicPage() {
                     simplifiedVersion: e.target.checked,
                   }))
                 }
-                className="rounded border-slate-300 text-slate-800 focus:ring-slate-500"
+                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
               />
-              <span className="text-sm text-slate-700">
+              <span className="text-sm font-medium text-slate-700">
                 {TEXTS.simplifiedVersion}
               </span>
             </label>
@@ -322,12 +326,14 @@ export default function CreateFromTopicPage() {
           <Button
             type="submit"
             size="lg"
+            variant="primary"
             disabled={loading}
             className="w-full sm:w-auto"
           >
             {loading ? TEXTS.generating : TEXTS.generate}
           </Button>
         </form>
+        </div>
       </div>
     </main>
   );

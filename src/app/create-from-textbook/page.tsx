@@ -132,18 +132,22 @@ export default function CreateFromTextbookPage() {
       <div className="max-w-xl mx-auto px-4 py-8">
         <Link
           href="/"
-          className="text-sm text-slate-500 hover:text-slate-700 no-print"
+          className="text-sm font-medium text-slate-500 hover:text-primary-600 no-print transition-colors"
         >
           {TEXTS.backToHome}
         </Link>
-        <h1 className="mt-4 text-2xl font-bold text-slate-900">
+        <p className="mt-4 text-sm font-semibold uppercase tracking-wider text-primary-600">
+          {TEXTS.createFromTextbook}
+        </p>
+        <h1 className="mt-1 text-2xl font-bold text-slate-900">
           {TEXTS.createFromTextbookTitle}
         </h1>
         <p className="mt-1 text-slate-600">
           {TEXTS.createFromTextbookDesc}
         </p>
 
-        <div className="mt-8 space-y-6">
+        <div className="mt-8 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-card sm:p-8">
+        <div className="space-y-6">
           <FormField
             label={TEXTS.uploadFiles}
             id="files"
@@ -155,7 +159,7 @@ export default function CreateFromTextbookPage() {
               type="file"
               accept={ACCEPT}
               multiple
-              className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-slate-800"
+              className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-primary-50 file:px-4 file:py-2.5 file:font-semibold file:text-primary-700 file:transition-colors hover:file:bg-primary-100"
               onChange={onFileChange}
             />
           </FormField>
@@ -170,13 +174,13 @@ export default function CreateFromTextbookPage() {
                   {files.map((file, i) => (
                     <li
                       key={`${file.name}-${i}`}
-                      className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                      className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm"
                     >
-                      <span className="truncate text-slate-700">{file.name}</span>
+                      <span className="truncate font-medium text-slate-700">{file.name}</span>
                       <button
                         type="button"
                         onClick={() => removeFile(i)}
-                        className="text-slate-500 hover:text-red-600"
+                        className="text-slate-500 hover:text-red-600 font-medium transition-colors"
                       >
                         {TEXTS.remove}
                       </button>
@@ -201,7 +205,7 @@ export default function CreateFromTextbookPage() {
               </div>
 
               {extractedText && (
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="rounded-xl border border-slate-200 bg-primary-50/50 p-4">
                   <h3 className="text-sm font-semibold text-slate-800">
                     {TEXTS.recognizedContent}
                   </h3>
@@ -218,7 +222,7 @@ export default function CreateFromTextbookPage() {
           <FormField label={TEXTS.outputType} id="outputType">
             <select
               id="outputType"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              className="w-full"
               value={outputType}
               onChange={(e) =>
                 setOutputType(e.target.value as OutputType)
@@ -235,7 +239,7 @@ export default function CreateFromTextbookPage() {
           <FormField label={TEXTS.schoolType} id="schoolType">
             <select
               id="schoolType"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              className="w-full"
               value={schoolType}
               onChange={(e) => setSchoolType(e.target.value as TextbookInput["schoolType"])}
             >
@@ -251,7 +255,7 @@ export default function CreateFromTextbookPage() {
             <FormField label={TEXTS.subject} id="subject">
               <select
                 id="subject"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                className="w-full"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
               >
@@ -265,7 +269,7 @@ export default function CreateFromTextbookPage() {
             <FormField label={TEXTS.grade} id="grade">
               <select
                 id="grade"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                className="w-full"
                 value={grade}
                 onChange={(e) => setGrade(e.target.value)}
               >
@@ -283,7 +287,7 @@ export default function CreateFromTextbookPage() {
               id="classLabel"
               type="text"
               placeholder="např. 6.B"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              className="w-full"
               value={classLabel}
               onChange={(e) => setClassLabel(e.target.value)}
             />
@@ -298,14 +302,14 @@ export default function CreateFromTextbookPage() {
               {TASK_TYPES.map((t) => (
                 <div
                   key={t.value}
-                  className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white px-3 py-2"
+                  className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5"
                 >
-                  <span className="text-sm text-slate-800">{t.label}</span>
+                  <span className="text-sm font-medium text-slate-800">{t.label}</span>
                   <input
                     type="number"
                     min={0}
                     max={10}
-                    className="w-20 rounded border border-slate-300 px-2 py-1 text-center text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                    className="w-20 text-center"
                     value={taskTypeCounts?.[t.value] ?? 0}
                     onChange={(e) =>
                       setTaskTypeCount(t.value, Number(e.target.value) || 0)
@@ -320,7 +324,7 @@ export default function CreateFromTextbookPage() {
           <FormField label={TEXTS.difficulty} id="difficulty">
               <select
                 id="difficulty"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                className="w-full"
                 value={difficulty}
                 onChange={(e) =>
                   setDifficulty(e.target.value as Difficulty)
@@ -337,7 +341,7 @@ export default function CreateFromTextbookPage() {
           <FormField label={TEXTS.intendedUse} id="useCase">
             <select
               id="useCase"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              className="w-full"
               value={useCase}
               onChange={(e) =>
                 setUseCase(e.target.value as UseCase)
@@ -351,17 +355,19 @@ export default function CreateFromTextbookPage() {
             </select>
           </FormField>
 
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={simplifiedVersion}
-              onChange={(e) => setSimplifiedVersion(e.target.checked)}
-              className="rounded border-slate-300 text-slate-800 focus:ring-slate-500"
-            />
-            <span className="text-sm text-slate-700">
-              {TEXTS.simplifiedVersion}
-            </span>
-          </label>
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+            <label className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={simplifiedVersion}
+                onChange={(e) => setSimplifiedVersion(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+              />
+              <span className="text-sm font-medium text-slate-700">
+                {TEXTS.simplifiedVersion}
+              </span>
+            </label>
+          </div>
 
           {error && (
             <p className="text-sm text-red-600" role="alert">
@@ -372,12 +378,14 @@ export default function CreateFromTextbookPage() {
           <Button
             type="button"
             size="lg"
+            variant="primary"
             disabled={!extractedText || generating}
             onClick={handleGenerate}
             className="w-full sm:w-auto"
           >
             {generating ? TEXTS.generating : TEXTS.generateFromContent}
           </Button>
+        </div>
         </div>
       </div>
     </main>
