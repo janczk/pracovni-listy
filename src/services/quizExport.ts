@@ -20,23 +20,23 @@ const TASK_TO_QUIZ_TYPE: Record<
  * Export worksheet as quiz JSON (questions, options, correct answers, order).
  */
 export function worksheetToQuizExport(worksheet: Worksheet): QuizExport {
-  const questions: QuizQuestion[] = worksheet.tasks
-    .map((task, index) => {
-      const quizType = TASK_TO_QUIZ_TYPE[task.type];
-      if (!quizType) return null;
-      const correctAnswer = Array.isArray(task.answer)
-        ? task.answer
-        : task.answer;
-      return {
+  const questions: QuizQuestion[] = worksheet.tasks.flatMap((task, index) => {
+    const quizType = TASK_TO_QUIZ_TYPE[task.type];
+    if (!quizType) return [];
+    const correctAnswer = Array.isArray(task.answer)
+      ? task.answer
+      : task.answer;
+    return [
+      {
         id: task.id,
         type: quizType,
         prompt: task.question,
         options: task.options,
         correctAnswer,
         order: index + 1,
-      };
-    })
-    .filter((q): q is QuizQuestion => q !== null);
+      },
+    ];
+  });
 
   return {
     title: worksheet.title,
