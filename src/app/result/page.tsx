@@ -14,7 +14,7 @@ import {
   SOURCE_TYPE_LABELS,
   SCHOOL_TYPE_LABELS,
 } from "@/lib/czech";
-import { regenerateSingleTask, generateWorksheetFromTopic } from "@/services/worksheetGeneration";
+import { regenerateSingleTask, generateWorksheetFromTopic, simplifyWorksheetForSvp } from "@/services/worksheetGeneration";
 import type { Worksheet, WorksheetTask } from "@/types/worksheet";
 import type { TopicInput } from "@/types/inputs";
 
@@ -29,6 +29,7 @@ export default function ResultPage() {
   const [exportingPdf, setExportingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [regenError, setRegenError] = useState<string | null>(null);
+  const [svpSyncError, setSvpSyncError] = useState<string | null>(null);
 
   useEffect(() => {
     const { worksheet: w, simplifiedWorksheet: sw } = getWorksheetFromSession();
@@ -39,33 +40,48 @@ export default function ResultPage() {
   const displayedWorksheet: Worksheet =
     previewVariant === "simplified" && simplifiedWorksheet ? simplifiedWorksheet : worksheet!;
 
-  const persist = (next: Worksheet) => {
+  /** Uloží změny. Při úpravě běžné verze a existující SVP verze znovu vygeneruje SVP z aktuálního listu (stejná pravidla jako při vytvoření). */
+  const persist = async (next: Worksheet) => {
     if (!worksheet) return;
     if (previewVariant === "simplified" && simplifiedWorksheet) {
       setSimplifiedWorksheet(next);
       saveWorksheetToSession(worksheet, next);
+      return;
+    }
+    setWorksheet(next);
+    if (simplifiedWorksheet) {
+      setSvpSyncError(null);
+      try {
+        const simplified = await simplifyWorksheetForSvp(next);
+        simplified.answersVisible = next.answersVisible;
+        setSimplifiedWorksheet(simplified);
+        saveWorksheetToSession(next, simplified);
+      } catch (err) {
+        console.error("SVP sync failed:", err);
+        setSvpSyncError("Verze pro SVP se nepodařila aktualizovat. Běžná verze je uložená.");
+        saveWorksheetToSession(next, simplifiedWorksheet);
+      }
     } else {
-      setWorksheet(next);
-      saveWorksheetToSession(next, simplifiedWorksheet);
+      saveWorksheetToSession(next, null);
     }
   };
 
-  const handleToggleAnswers = () => {
+  const handleToggleAnswers = async () => {
     if (!displayedWorksheet) return;
-    persist({ ...displayedWorksheet, answersVisible: !displayedWorksheet.answersVisible });
+    await persist({ ...displayedWorksheet, answersVisible: !displayedWorksheet.answersVisible });
   };
 
-  const handleEditTitle = (title: string) => {
+  const handleEditTitle = async (title: string) => {
     if (!displayedWorksheet) return;
-    persist({ ...displayedWorksheet, title });
+    await persist({ ...displayedWorksheet, title });
   };
 
-  const handleEditInstructions = (instructions: string) => {
+  const handleEditInstructions = async (instructions: string) => {
     if (!displayedWorksheet) return;
-    persist({ ...displayedWorksheet, instructions });
+    await persist({ ...displayedWorksheet, instructions });
   };
 
-  const handleEditTask = (
+  const handleEditTask = async (
     taskId: string,
     updates: Partial<WorksheetTask>
   ) => {
@@ -73,13 +89,13 @@ export default function ResultPage() {
     const tasks = displayedWorksheet.tasks.map((t) =>
       t.id === taskId ? { ...t, ...updates } : t
     );
-    persist({ ...displayedWorksheet, tasks });
+    await persist({ ...displayedWorksheet, tasks });
   };
 
-  const handleDeleteTask = (taskId: string) => {
+  const handleDeleteTask = async (taskId: string) => {
     if (!displayedWorksheet) return;
     const tasks = displayedWorksheet.tasks.filter((t) => t.id !== taskId);
-    persist({ ...displayedWorksheet, tasks });
+    await persist({ ...displayedWorksheet, tasks });
   };
 
   const handleRegenerateTask = async (taskId: string) => {
@@ -91,7 +107,7 @@ export default function ResultPage() {
       const tasks = displayedWorksheet.tasks.map((t) =>
         t.id === taskId ? newTask : t
       );
-      persist({ ...displayedWorksheet, tasks });
+      await persist({ ...displayedWorksheet, tasks });
     } catch (err) {
       console.error("Regenerate task failed:", err);
       setRegenError("Regenerace této úlohy se nezdařila. Zkuste to prosím znovu.");
@@ -100,7 +116,7 @@ export default function ResultPage() {
     }
   };
 
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
     if (!displayedWorksheet) return;
     const newTask: WorksheetTask = {
       id: `manual-${Date.now()}`,
@@ -110,7 +126,7 @@ export default function ResultPage() {
       options: [],
     };
     const tasks = [...displayedWorksheet.tasks, newTask];
-    persist({ ...displayedWorksheet, tasks });
+    await persist({ ...displayedWorksheet, tasks });
   };
 
   const handleRegenerateAll = async () => {
@@ -143,7 +159,7 @@ export default function ResultPage() {
       next.answersVisible = worksheet.answersVisible;
       next.classLabel = worksheet.classLabel;
       next.schoolType = worksheet.schoolType;
-      persist(next);
+      await persist(next);
     } finally {
       setRegeneratingAll(false);
     }
@@ -253,6 +269,11 @@ export default function ResultPage() {
             {regenError && (
               <p className="text-sm text-red-600" role="alert">
                 {regenError}
+              </p>
+            )}
+            {svpSyncError && (
+              <p className="text-sm text-amber-600" role="alert">
+                {svpSyncError}
               </p>
             )}
             <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card">

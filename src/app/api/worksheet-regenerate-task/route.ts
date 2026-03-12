@@ -73,7 +73,13 @@ export async function POST(req: Request) {
     });
 
     const rawText = result.response.text();
+    if (!rawText || !rawText.trim()) {
+      throw new Error("Model nevrátil žádný text.");
+    }
     const jsonText = extractJsonFromText(rawText);
+    if (!jsonText) {
+      throw new Error("V odpovědi modelu chybí JSON.");
+    }
     const parsed = JSON.parse(jsonText) as Omit<WorksheetTask, "id">;
 
     let answer: WorksheetTask["answer"] = parsed.answer;

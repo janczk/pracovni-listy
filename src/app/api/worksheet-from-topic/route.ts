@@ -51,18 +51,11 @@ export async function POST(req: Request) {
       (body.taskTypeCounts.short_answer ?? 0) +
       (body.taskTypeCounts.reading_questions ?? 0);
 
-    const isSvp = body.simplifiedVersion === true || body.schoolType === "svp";
-    const audienceInstruction = isSvp
-      ? [
-          "DŮLEŽITÉ – Tento výstup je pro ŽÁKY SE SPECIÁLNÍMI VZDĚLÁVACÍMI POTŘEBAMI (SVP).",
-          "Pracovní list musí být výrazně zjednodušen: kratší věty, jednodušší slovní zásoba, nižší nároky na porozumění textu.",
-          "Tito žáci jsou často pomalejší, mohou mít různé typy hendikepů a věci chápou hůře – obsah musí být přizpůsoben jejich možnostem.",
-          "Nevyžaduj stejný standard jako u běžného pracovního listu; odpovědi mohou být formulovány jednodušeji a stručněji.",
-        ].join(" ")
-      : [
-          "Tento výstup je pro BĚŽNOU ZÁKLADNÍ ŠKOLU.",
-          "Otázky a odpovědi mají odpovídat standardní úrovni žáků bez speciálních potřeb.",
-        ].join(" ");
+    // Vždy generujeme běžný pracovní list. Verze pro SVP vzniká až v druhém kroku (worksheet-simplify-for-svp).
+    const audienceInstruction = [
+      "Tento výstup je pro BĚŽNOU ZÁKLADNÍ ŠKOLU.",
+      "Otázky a odpovědi mají odpovídat standardní úrovni žáků bez speciálních potřeb.",
+    ].join(" ");
 
     const result = await model.generateContent({
       contents: [

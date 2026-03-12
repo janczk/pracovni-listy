@@ -51,10 +51,14 @@ export async function POST(req: Request) {
   try {
     const model = getGeminiModel();
 
+    const hasEmptyAnswer = worksheet.tasks.some(
+      (t) => t.answer === "" || t.answer === undefined || (Array.isArray(t.answer) && t.answer.length === 0)
+    );
+
     const tasksDescription = worksheet.tasks
       .map(
         (t, i) =>
-          `Úloha ${i + 1} (typ: ${t.type}): otázka="${t.question}"${t.options?.length ? `, možnosti=${JSON.stringify(t.options)}` : ""}, správná odpověď=${JSON.stringify(t.answer)}`
+          `Úloha ${i + 1} (typ: ${t.type}): otázka="${(t.question || "").trim()}"${t.options?.length ? `, možnosti=${JSON.stringify(t.options)}` : ""}, správná odpověď=${JSON.stringify(t.answer ?? "")}`
       )
       .join("\n");
 
@@ -72,12 +76,17 @@ export async function POST(req: Request) {
                 "2) U výběru z možností: zachovej stejný počet možností, stejné pořadí a stejnou správnou odpověď (stejná možnost musí zůstat správná).",
                 "3) U pravda/nepravda: zachovej stejný smysl tvrzení a stejnou odpověď (true nebo false).",
                 "4) Počet úloh a jejich typy musí zůstat beze změny. Vrať přesně tolik úloh, kolik je vstupních, ve stejném pořadí.",
+                hasEmptyAnswer
+                  ? "5) U úloh, kde je správná odpověď prázdná, zjednoduš otázku a doplň vhodnou krátkou správnou odpověď v jednoduchém jazyce pro žáky se SVP."
+                  : "",
                 "",
                 "Běžný pracovní list (úlohy):",
                 tasksDescription,
                 "",
                 "Odpověz pouze validním JSON ve tvaru: { \"tasks\": [ { \"type\": \"...\", \"question\": \"...\", \"options\": [...] nebo vynech, \"answer\": \"...\" nebo pole, volitelně \"explanation\": \"...\" } ] }",
-              ].join("\n"),
+              ]
+                .filter(Boolean)
+                .join("\n"),
             },
           ],
         },
@@ -85,11 +94,24 @@ export async function POST(req: Request) {
     });
 
     const rawText = result.response.text();
-    const jsonText = extractJsonFromText(rawText);
-    const parsed = JSON.parse(jsonText) as GeminiResponse;
+    if (!rawText || !rawText.trim()) {
+      throw new Error("Model nevrátil žádný text.");
+    }
 
-    if (!parsed.tasks || parsed.tasks.length !== worksheet.tasks.length) {
-      throw new Error("Model nevrátil stejný počet úloh.");
+    const jsonText = extractJsonFromText(rawText);
+    if (!jsonText) {
+      throw new Error("V odpovědi modelu chybí JSON.");
+    }
+
+    let parsed: GeminiResponse;
+    try {
+      parsed = JSON.parse(jsonText) as GeminiResponse;
+    } catch {
+      throw new Error("Model nevrátil neplatný JSON.");
+    }
+
+    if (!parsed.tasks || !Array.isArray(parsed.tasks)) {
+      throw new Error("Model nevrátil prázdný seznam úloh.");
     }
 
     const simplifiedTasks: WorksheetTask[] = worksheet.tasks.map((original, index) => {
@@ -97,9 +119,9 @@ export async function POST(req: Request) {
       return {
         id: original.id,
         type: original.type,
-        question: s?.question ?? original.question,
+        question: (s?.question != null && String(s.question).trim() !== "" ? s.question : original.question) as string,
         options: s?.options ?? original.options,
-        answer: s?.answer ?? original.answer,
+        answer: s?.answer !== undefined && s?.answer !== "" ? s.answer : original.answer,
         explanation: s?.explanation ?? original.explanation,
       };
     });
