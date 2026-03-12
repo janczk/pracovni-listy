@@ -14,6 +14,7 @@ const TASK_TO_QUIZ_TYPE: Record<
   short_answer: "short_answer",
   fill_in: "short_answer",
   reading_questions: "short_answer",
+  draw_picture: null,
 };
 
 /**
