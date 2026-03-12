@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .no-print {
+    display: none !important;
+  }
+  body.print-student #print-area-student,
+  body.print-student #print-area-student * {
+    visibility: visible;
+  }
+  body.print-student #print-area-student {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  body.print-teacher #print-area-teacher,
+  body.print-teacher #print-area-teacher * {
+    visibility: visible;
+  }
+  body.print-teacher #print-area-teacher {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
