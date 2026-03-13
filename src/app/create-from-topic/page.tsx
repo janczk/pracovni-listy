@@ -78,7 +78,11 @@ export default function CreateFromTopicPage() {
         simplifiedVersion: false,
       });
       worksheet.answersVisible = input.includeAnswers;
-      if (input.simplifiedVersion) {
+      if (input.schoolType === "svp") {
+        const simplifiedWorksheet = await simplifyWorksheetForSvp(worksheet);
+        simplifiedWorksheet.answersVisible = input.includeAnswers;
+        saveWorksheetToSession(simplifiedWorksheet);
+      } else if (input.simplifiedVersion) {
         const simplifiedWorksheet = await simplifyWorksheetForSvp(worksheet);
         simplifiedWorksheet.answersVisible = input.includeAnswers;
         saveWorksheetToSession(worksheet, simplifiedWorksheet);

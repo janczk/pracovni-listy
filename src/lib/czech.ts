@@ -34,7 +34,7 @@ export const TEXTS = {
   difficulty: "Obtížnost",
   intendedUse: "Účel použití",
   includeAnswers: "Zobrazit odpovědi v náhledu",
-  simplifiedVersion: "Zjednodušená verze (pro žáky se speciálními vzdělávacími potřebami)",
+  simplifiedVersion: "Přidat verzi pracovního listu pro žáky s SVP (zjednodušená verze)",
 
   uploadFiles: "Nahrát soubory",
   uploadFilesHint: "Obrázky (JPEG, PNG, WebP) nebo PDF. Nejvýše 5 souborů.",
