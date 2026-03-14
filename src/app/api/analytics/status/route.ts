@@ -32,6 +32,9 @@ export async function GET() {
 
   let storageTest: "ok" | "error" | "skipped" = "skipped";
   let storageError: string | null = null;
+  let writeTest: "ok" | "error" | "skipped" = "skipped";
+  let writeError: string | null = null;
+
   if (redisConfigured) {
     try {
       const { getStatsWithUsers } = await import("@/lib/analyticsServer");
@@ -41,6 +44,23 @@ export async function GET() {
       storageTest = "error";
       storageError = e instanceof Error ? e.message : String(e);
     }
+
+    // Test zápisu – pokud selže, může být nastaven jen read-only token
+    try {
+      const { Redis } = await import("@upstash/redis");
+      const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+      const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+      const redis = url && token ? new Redis({ url, token }) : Redis.fromEnv();
+      const testKey = "analytics-status-write-test";
+      await redis.set(testKey, "ok");
+      const v = await redis.get(testKey);
+      await redis.del(testKey);
+      writeTest = v === "ok" ? "ok" : "error";
+      if (writeTest === "error") writeError = "Čtení po zápisu nevrátilo očekávanou hodnotu.";
+    } catch (e) {
+      writeTest = "error";
+      writeError = e instanceof Error ? e.message : String(e);
+    }
   }
 
   return NextResponse.json({
@@ -49,5 +69,7 @@ export async function GET() {
     env,
     storageTest,
     storageError,
+    writeTest,
+    writeError,
   });
 }
