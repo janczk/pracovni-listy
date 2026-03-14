@@ -35,11 +35,19 @@ export async function GET() {
   let writeTest: "ok" | "error" | "skipped" = "skipped";
   let writeError: string | null = null;
 
+  let dataSummary: { dates: number; users: number; totalGenerated: number } | null = null;
+
   if (redisConfigured) {
     try {
       const { getStatsWithUsers } = await import("@/lib/analyticsServer");
-      await getStatsWithUsers();
+      const payload = await getStatsWithUsers();
       storageTest = "ok";
+      const totalGenerated = Object.values(payload.overall).reduce((s, d) => s + (d?.generated ?? 0), 0);
+      dataSummary = {
+        dates: Object.keys(payload.overall).length,
+        users: Object.keys(payload.byUser).length,
+        totalGenerated,
+      };
     } catch (e) {
       storageTest = "error";
       storageError = e instanceof Error ? e.message : String(e);
@@ -71,5 +79,6 @@ export async function GET() {
     storageError,
     writeTest,
     writeError,
+    dataSummary,
   });
 }

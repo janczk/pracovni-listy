@@ -13,7 +13,9 @@ export async function GET() {
   }
   try {
     const stats = await getStatsWithUsers();
-    return NextResponse.json(stats);
+    const res = NextResponse.json(stats);
+    res.headers.set("Cache-Control", "no-store, max-age=0");
+    return res;
   } catch (e) {
     console.error("analytics stats failed:", e);
     return NextResponse.json({ error: "Načtení statistik se nepodařilo." }, { status: 500 });
