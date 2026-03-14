@@ -36,9 +36,23 @@ export async function GET() {
   let writeError: string | null = null;
 
   let dataSummary: { dates: number; users: number; totalGenerated: number } | null = null;
+  let usageStatsKey: "missing" | "empty" | number = "missing";
 
   if (redisConfigured) {
     try {
+      const { Redis } = await import("@upstash/redis");
+      const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+      const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+      const redis = url && token ? new Redis({ url, token }) : Redis.fromEnv();
+      try {
+        const raw = await redis.get("usage-stats");
+        if (raw == null) usageStatsKey = "missing";
+        else if (typeof raw === "string") usageStatsKey = raw.length || "empty";
+        else usageStatsKey = JSON.stringify(raw).length;
+      } catch {
+        usageStatsKey = "missing";
+      }
+
       const { getStatsWithUsers } = await import("@/lib/analyticsServer");
       const payload = await getStatsWithUsers();
       storageTest = "ok";
@@ -80,5 +94,6 @@ export async function GET() {
     writeTest,
     writeError,
     dataSummary,
+    usageStatsKey,
   });
 }
