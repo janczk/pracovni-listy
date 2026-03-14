@@ -42,16 +42,28 @@ function normalizePayload(parsed: unknown): StatsPayload {
   };
 }
 
+function getRedisEnv(): { url: string | undefined; token: string | undefined } {
+  const url =
+    process.env.UPSTASH_REDIS_REST_URL ??
+    process.env.KV_REST_API_URL ??
+    (process.env as Record<string, string>)["UPSTASH_REDIS_REST_URL"] ??
+    (process.env as Record<string, string>)["KV_REST_API_URL"];
+  const token =
+    process.env.UPSTASH_REDIS_REST_TOKEN ??
+    process.env.KV_REST_API_TOKEN ??
+    (process.env as Record<string, string>)["UPSTASH_REDIS_REST_TOKEN"] ??
+    (process.env as Record<string, string>)["KV_REST_API_TOKEN"];
+  return { url, token };
+}
+
 function useRedis(): boolean {
-  const upstash = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
-  const kv = process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN;
-  return !!(upstash || kv);
+  const { url, token } = getRedisEnv();
+  return !!(url && token);
 }
 
 async function getRedisClient() {
   const { Redis } = await import("@upstash/redis");
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  const { url, token } = getRedisEnv();
   if (url && token) return new Redis({ url, token });
   return Redis.fromEnv();
 }

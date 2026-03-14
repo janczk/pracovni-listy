@@ -197,6 +197,16 @@ export default function AnalyticsPage() {
         <p className="mt-6 text-xs text-slate-500">
           Vygenerované listy = každé volání generování (z tématu nebo z učebnice). Běžná ZŠ + LMP = listy pro žáky s LMP. Běžná ZŠ + SVP = listy s přidanou zjednodušenou verzí pro SVP.
         </p>
+        <p className="mt-2 text-xs">
+          <a
+            href="/api/analytics/status"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary-600 hover:underline"
+          >
+            Diagnostika úložiště (Redis / env)
+          </a>
+        </p>
       </div>
     </main>
   );
