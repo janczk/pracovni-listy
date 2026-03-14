@@ -93,9 +93,40 @@ Alternativa: stačí udělat nový push do repozitáře (např. na `main`) – V
 
 ---
 
-## 5. Kontrola, že vše běží
+## 5. Vlastní doména (např. dovyuky.cz)
 
-1. **Beta přístup:** Otevři `https://tvoje-domena.vercel.app/beta`, zadej jeden z kódů z BETA_CODES a klikni Vstoupit. Měl bys skončit na úvodní stránce.
+Aplikaci můžeš provozovat na vlastní doméně zakoupené u Forpsi (nebo jiného poskytovatele). Použije se **stejný** Vercel projekt – jen k němu přidáš doménu. **Statistiky, beta přístup i generování budou fungovat stejně** (stejné Redis, stejné env).
+
+### 5.1 Přidání domény na Vercelu
+
+1. V projektu na Vercelu: **Settings** → **Domains**.
+2. Do pole zadej **dovyuky.cz** a klikni **Add**.
+3. Vercel ti ukáže, co nastavit v DNS (většinou **CNAME** nebo **A** záznamy). Nech si stránku otevřenou.
+
+### 5.2 Nastavení DNS u Forpsi
+
+1. Přihlas se do správy domény u Forpsi (Správa domén → dovyuky.cz → DNS / Zóna).
+2. Přidej záznam podle toho, co Vercel požaduje:
+   - **CNAME:**  
+     - **Jméno/host:** `@` (nebo prázdné pro kořen) nebo `www` pro www.dovyuky.cz.  
+     - **Cíl/hodnota:** `cname.vercel-dns.com` (nebo přesně to, co Vercel zobrazí).
+   - **A záznamy** (pokud Vercel nabídne IP adresy):  
+     - Pro kořen `@` přidej A záznamy na IP od Vercelu (76.76.21.21 a další – v Domains u Vercelu uvidíš přesné hodnoty).
+3. U Forpsi změny ulož. Propagace DNS může trvat několik minut až desítky hodin.
+
+### 5.3 Dokončení na Vercelu
+
+1. Na stránce **Domains** u projektu klikni na **Refresh** nebo **Verify** u domény dovyuky.cz.
+2. Až Vercel doménu ověří, stav se změní na „Valid“ / připojeno.
+3. Volitelně: přidej i **www.dovyuky.cz** a nastav přesměrování (např. www → bez www), pokud to Vercel umí.
+
+**Důležité:** Neměň projekt ani env proměnné – jen přidáváš doménu. Redis, BETA_CODES a GEMINI_API_KEY zůstávají stejné, takže statistiky budou fungovat i na dovyuky.cz.
+
+---
+
+## 6. Kontrola, že vše běží
+
+1. **Beta přístup:** Otevři `https://dovyuky.cz/beta` (nebo `https://tvoje-domena.vercel.app/beta`), zadej jeden z kódů z BETA_CODES a klikni Vstoupit. Měl bys skončit na úvodní stránce.
 2. **Generování:** Přihlas se (beta kód), vytvoř pracovní list (z tématu nebo z učebnice). List by se měl vygenerovat (bez chyby o API klíči).
 3. **Statistiky:** Přihlas se kódem **beta-pl-001**, v menu klikni na **Statistiky** (nebo otevři `/analytics`). Měl bys vidět tabulky; po vygenerování listu by se měla čísla zvýšit (pokud je Redis připojený).
 

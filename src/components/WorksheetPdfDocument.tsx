@@ -16,6 +16,7 @@ import {
   getWorksheetUiStrings,
   formatSubjectGrade,
   formatTrueFalseForDisplay,
+  formatTrueFalseOptionDisplay,
 } from "@/lib/worksheetLabelsByLanguage";
 
 // Arial (Liberation Sans) – plná podpora české diakritiky, metrická náhrada Arial
@@ -281,7 +282,7 @@ export function WorksheetPdfDocument({
               <View style={styles.taskOptions}>
                 {task.options.map((opt, j) => (
                   <View key={j} style={styles.taskOptionItem}>
-                    <Text style={capsStyle}>{`• ${formatOptionWithLabel(j, safeText(opt))}`}</Text>
+                    <Text style={capsStyle}>{`• ${formatOptionWithLabel(j, task.type === "true_false" ? formatTrueFalseOptionDisplay(safeText(opt), lang) : safeText(opt))}`}</Text>
                   </View>
                 ))}
               </View>

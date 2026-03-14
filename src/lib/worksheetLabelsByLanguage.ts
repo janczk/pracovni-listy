@@ -139,3 +139,11 @@ export function formatTrueFalseForDisplay(value: string | undefined, language: s
   if (v === "false" || v === "ne" || v === "no" || v === "nein" || v === "non" || v === "ні") return ui.no;
   return value ?? "";
 }
+
+/** Pro zobrazení možnosti u úlohy pravda/nepravda: pokud je text true/false, zobraz v jazyce listu (Ano/Ne, Pravda/Nepravda). */
+export function formatTrueFalseOptionDisplay(optionText: string, language: string): string {
+  const v = (optionText ?? "").trim().toLowerCase();
+  if (v === "true") return getWorksheetUiStrings(language).yes;
+  if (v === "false") return getWorksheetUiStrings(language).no;
+  return optionText;
+}

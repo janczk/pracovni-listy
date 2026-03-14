@@ -36,6 +36,7 @@ export async function POST(req: Request) {
     const model = getGeminiModel();
 
     const topic = body.worksheet.title.replace(/^Pracovní list:\s*/i, "");
+    const lang = body.worksheet.language ?? "Čeština";
 
     const result = await model.generateContent({
       contents: [
@@ -44,13 +45,13 @@ export async function POST(req: Request) {
           parts: [
             {
               text: [
-                "Jsi učitel na české základní škole.",
+                "Jsi učitel na základní škole.",
                 `Regeneruj jednu novou úlohu typu "${type}" k tématu pracovního listu "${topic}".`,
                 `Předmět: ${body.worksheet.subject}, ročník: ${body.worksheet.grade}.`,
-                "Zachovej jazyk a styl vhodný pro daný ročník.",
+                `Jazyk výstupu: Veškerý text (otázka, možnosti, odpověď, vysvětlení) musí být výhradně v jazyce ${lang}. Žádná angličtina ani míchání jazyků.`,
                 "",
                 "Pravidla podle typu úlohy:",
-                '- pokud je typ "true_false", musíš vrátit úplně stejnou otázku jako zadal učitel a pole "answer" musí být pouze "true"/"false" (můžeš uvažovat, že "pravda"/"ano" = "true" a "nepravda"/"ne" = "false"); žádné pole options nepoužívej, nebo ho nech prázdné.',
+                `- pokud je typ "true_false", vrať stejnou otázku jako zadal učitel; pole "answer" piš v jazyce ${lang} (např. v češtině "Pravda" nebo "Nepravda", resp. "Ano" nebo "Ne" – nikdy anglické true/false). Pole options nech prázdné nebo vynech.`,
                 '- pokud je typ "multiple_choice", v poli "options" vrať 3–4 textové možnosti bez písmen (bez "A)", "B)" atd.) a v poli "answer" vrať text správné možnosti přesně tak, jak je uveden v options.',
                 '- pokud je typ "draw_picture", formuluj otázku tak, aby žák měl něco nakreslit (schéma, obrázek). Pole "answer" nech prázdné řetězce "" a "options" neuváděj.',
                 "- u ostatních typů vrať krátký text odpovědi v poli answer.",

@@ -185,7 +185,9 @@ export default function AnalyticsPage() {
                     <tr key={userId} className="border-b border-slate-100 last:border-0">
                       <td className="px-4 py-3 text-slate-800">
                         <span className="font-medium">{label}</span>
-                        <span className="ml-1 text-slate-500 text-xs">{userId}</span>
+                        {!(userId in BETA_USER_LABELS) && (
+                          <span className="ml-1 text-slate-500 text-xs">{userId}</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums">{t.generated}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{t.basicAndLmp}</td>

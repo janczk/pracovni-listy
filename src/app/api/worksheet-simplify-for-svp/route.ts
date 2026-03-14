@@ -64,6 +64,7 @@ export async function POST(req: Request) {
       (t) => t.answer === "" || t.answer === undefined || (Array.isArray(t.answer) && t.answer.length === 0)
     );
 
+    const lang = worksheet.language ?? "Čeština";
     const tasksDescription = worksheet.tasks
       .map(
         (t, i) =>
@@ -80,10 +81,12 @@ export async function POST(req: Request) {
               text: [
                 "Máš pracovní list pro běžnou základní školu. Vytvoř z něj verzi pro žáky se SVP (speciální vzdělávací potřeby): STEJNÉ otázky a STEJNÉ správné odpovědi, pouze zjednodušený jazyk pro snazší porozumění psanému textu.",
                 "",
+                `Jazyk výstupu: List je v jazyce ${lang}. Veškerý text výstupu musí zůstat v tomto jazyce (včetně odpovědí u pravda/nepravda – např. Pravda/Nepravda nebo Ano/Ne v češtině, nikdy anglické true/false).`,
+                "",
                 "Pravidla:",
                 "1) Výstup musí vycházet ze stejných otázek a odpovědí jako běžný list – neměň obsah, význam ani správnou odpověď. Mění se jen formulace (kratší věty, jednodušší slova).",
                 "2) U výběru z možností: zachovej stejný počet možností, stejné pořadí a stejnou správnou odpověď (stejná možnost musí zůstat správná).",
-                "3) U pravda/nepravda: zachovej stejný smysl tvrzení a stejnou odpověď (true nebo false).",
+                "3) U pravda/nepravda: zachovej stejný smysl tvrzení a stejnou odpověď; text odpovědi piš ve stejném jazyce jako zbytek listu (ne anglické true/false).",
                 "4) Počet úloh a jejich typy musí zůstat beze změny. Vrať přesně tolik úloh, kolik je vstupních, ve stejném pořadí.",
                 hasEmptyAnswer
                   ? "5) U úloh, kde je správná odpověď prázdná (kromě draw_picture), zjednoduš otázku a doplň vhodnou krátkou správnou odpověď v jednoduchém jazyce pro žáky se SVP."

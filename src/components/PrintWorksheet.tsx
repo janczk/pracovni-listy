@@ -5,6 +5,7 @@ import {
   getWorksheetUiStrings,
   formatSubjectGrade,
   formatTrueFalseForDisplay,
+  formatTrueFalseOptionDisplay,
 } from "@/lib/worksheetLabelsByLanguage";
 
 const SVP_HEADING = "Zjednodušená verze (pro žáky se speciálními vzdělávacími potřebami)";
@@ -60,7 +61,12 @@ function StudentBlock({
             {task.options && task.options.length > 0 && (
               <ul className="mt-2 ml-4 space-y-1 text-slate-700 font-normal">
                 {task.options.map((opt, j) => (
-                  <li key={j}>{formatOptionWithLabel(j, opt)}</li>
+                  <li key={j}>
+                    {formatOptionWithLabel(
+                      j,
+                      task.type === "true_false" ? formatTrueFalseOptionDisplay(opt, lang) : opt
+                    )}
+                  </li>
                 ))}
               </ul>
             )}

@@ -62,10 +62,12 @@ export async function POST(req: Request) {
               text: [
                 "Máš jednu úlohu z pracovního listu pro běžnou ZŠ. Vytvoř její verzi pro žáky se SVP: STEJNÁ otázka a STEJNÁ správná odpověď, pouze zjednodušený jazyk.",
                 "",
+                "Jazyk výstupu: Veškerý text (otázka, možnosti, odpověď) musí zůstat ve stejném jazyce jako původní úloha. U pravda/nepravda piš odpověď v tomto jazyce (např. Pravda/Nepravda nebo Ano/Ne), nikdy anglické true/false.",
+                "",
                 "Pravidla:",
                 "1) Neměň obsah, význam ani správnou odpověď. Mění se jen formulace (kratší věty, jednodušší slova).",
                 "2) U výběru z možností: zachovej stejný počet možností, stejné pořadí a stejnou správnou odpověď.",
-                "3) U pravda/nepravda: zachovej stejný smysl a stejnou odpověď (true nebo false).",
+                "3) U pravda/nepravda: zachovej stejný smysl a stejnou odpověď; text odpovědi ve stejném jazyce jako zbytek (ne true/false).",
                 hasEmptyAnswer && task.type !== "draw_picture"
                   ? "4) Správná odpověď je prázdná – zjednoduš otázku a doplň vhodnou krátkou správnou odpověď v jednoduchém jazyce."
                   : "4) Zachovej typ úlohy.",

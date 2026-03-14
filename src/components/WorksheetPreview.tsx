@@ -3,7 +3,7 @@
 import type { Worksheet, WorksheetTask } from "@/types/worksheet";
 import { TEXTS, TASK_TYPES } from "@/lib/czech";
 import { formatOptionWithLabel, getCorrectOptionIndex } from "@/lib/optionLabels";
-import { getTaskTypeLabels, getWorksheetUiStrings, formatSubjectGrade, formatTrueFalseForDisplay } from "@/lib/worksheetLabelsByLanguage";
+import { getTaskTypeLabels, getWorksheetUiStrings, formatSubjectGrade, formatTrueFalseForDisplay, formatTrueFalseOptionDisplay } from "@/lib/worksheetLabelsByLanguage";
 
 interface WorksheetPreviewProps {
   worksheet: Worksheet;
@@ -110,7 +110,12 @@ export function WorksheetPreview({
                   {task.options && task.options.length > 0 && (
                     <ul className="mt-2 ml-4 space-y-1 text-slate-700 text-sm">
                       {task.options.map((opt, j) => (
-                        <li key={j}>{formatOptionWithLabel(j, opt)}</li>
+                        <li key={j}>
+                          {formatOptionWithLabel(
+                            j,
+                            task.type === "true_false" ? formatTrueFalseOptionDisplay(opt, lang) : opt
+                          )}
+                        </li>
                       ))}
                     </ul>
                   )}

@@ -12,5 +12,5 @@ export const BETA_USER_LABELS: Record<string, string> = {
   "beta-pl-007": "Jakub Zelený",
   "beta-pl-008": "Jirka Hejda",
   "beta-pl-009": "ZŠ Litomyšl",
-  "beta-pl-010": "Beta 10",
+  "beta-pl-010": "Radka Třetinová",
 };
