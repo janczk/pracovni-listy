@@ -40,14 +40,24 @@ export default async function RootLayout({
                 Generátor pracovních listů
               </span>
             </div>
-            {canViewAnalytics && (
-              <Link
-                href="/analytics"
-                className="no-print text-sm font-medium text-slate-600 hover:text-teal-600 transition-colors"
-              >
-                Statistiky
-              </Link>
-            )}
+            <div className="flex items-center gap-4">
+              {canViewAnalytics && (
+                <Link
+                  href="/analytics"
+                  className="no-print text-sm font-medium text-slate-600 hover:text-teal-600 transition-colors"
+                >
+                  Statistiky
+                </Link>
+              )}
+              {beta && (
+                <a
+                  href="/api/beta-logout"
+                  className="no-print text-sm font-medium text-slate-600 hover:text-teal-600 transition-colors"
+                >
+                  Odhlásit
+                </a>
+              )}
+            </div>
           </div>
         </header>
         <div className="min-h-[calc(100vh-3.5rem)]">
