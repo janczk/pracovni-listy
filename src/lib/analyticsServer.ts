@@ -70,10 +70,10 @@ async function getRedisClient() {
 
 async function readPayloadFromRedis(): Promise<StatsPayload> {
   const redis = await getRedisClient();
-  const raw = await redis.get<string>(KV_KEY);
-  if (raw == null || typeof raw !== "string") return { overall: {}, byUser: {} };
+  const raw = await redis.get(KV_KEY);
+  if (raw == null) return { overall: {}, byUser: {} };
   try {
-    const data = JSON.parse(raw) as unknown;
+    const data: unknown = typeof raw === "string" ? JSON.parse(raw) : raw;
     return normalizePayload(data);
   } catch {
     return { overall: {}, byUser: {} };
