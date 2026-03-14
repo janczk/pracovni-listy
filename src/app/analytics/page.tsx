@@ -81,6 +81,18 @@ export default function AnalyticsPage() {
     ...Object.keys(byUser).filter((id) => !(id in BETA_USER_LABELS)),
   ].filter((id, i, arr) => arr.indexOf(id) === i);
 
+  // Součet řádků v tabulce „Podle beta uživatelů“ (musí sedět s čísly v tabulce)
+  const totalsByUser = orderedUserIds.reduce(
+    (acc, userId) => {
+      const t = totalsFromStatsByDate(byUser[userId] ?? {});
+      acc.generated += t.generated;
+      acc.basicAndLmp += t.basicAndLmp;
+      acc.basicAndSvp += t.basicAndSvp;
+      return acc;
+    },
+    { generated: 0, basicAndLmp: 0, basicAndSvp: 0 }
+  );
+
   return (
     <main className="min-h-screen">
       <div className="max-w-3xl mx-auto px-4 py-8">
@@ -184,14 +196,23 @@ export default function AnalyticsPage() {
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-slate-200 bg-slate-50 font-medium">
-                  <td className="px-4 py-3 text-slate-800">Celkem</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{totalsOverall.generated}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{totalsOverall.basicAndLmp}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{totalsOverall.basicAndSvp}</td>
+                  <td className="px-4 py-3 text-slate-800">Součet uživatelů</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{totalsByUser.generated}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{totalsByUser.basicAndLmp}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{totalsByUser.basicAndSvp}</td>
                 </tr>
               </tfoot>
             </table>
           </div>
+        )}
+
+        {orderedUserIds.length > 0 &&
+          (totalsByUser.generated !== totalsOverall.generated ||
+            totalsByUser.basicAndLmp !== totalsOverall.basicAndLmp ||
+            totalsByUser.basicAndSvp !== totalsOverall.basicAndSvp) && (
+            <p className="mt-2 text-xs text-slate-500">
+              Rozdíl oproti „Celkem podle dnů“ jsou záznamy z doby před sledováním podle uživatelů nebo bez přihlášení beta kódem.
+            </p>
         )}
 
         <p className="mt-6 text-xs text-slate-500">
