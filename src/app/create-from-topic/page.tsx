@@ -22,9 +22,9 @@ import type { TopicInput } from "@/types/inputs";
 import type { OutputType, TaskType, Difficulty, UseCase } from "@/types/worksheet";
 
 const defaultTaskTypeCounts: TopicInput["taskTypeCounts"] = {
-  multiple_choice: 1,
-  true_false: 1,
-  short_answer: 1,
+  multiple_choice: 0,
+  true_false: 0,
+  short_answer: 0,
   fill_in: 0,
   reading_questions: 0,
   draw_picture: 0,
@@ -43,11 +43,14 @@ const defaultInput: TopicInput = {
   useCase: "revision",
   includeAnswers: true,
   simplifiedVersion: false,
+  allCapsForSvp: false,
 };
 
 export default function CreateFromTopicPage() {
   const router = useRouter();
   const [input, setInput] = useState<TopicInput>(defaultInput);
+  const [simplifiedVersion, setSimplifiedVersion] = useState(false);
+  const [allCapsForSvp, setAllCapsForSvp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,20 +81,29 @@ export default function CreateFromTopicPage() {
         simplifiedVersion: false,
       });
       worksheet.answersVisible = input.includeAnswers;
-      if (input.schoolType === "svp") {
+      const wantAllCaps = Boolean(allCapsForSvp);
+      if (input.schoolType === "lmp") {
+        worksheet.schoolType = "lmp";
+        worksheet.allCapsForSvp = wantAllCaps;
+        saveWorksheetToSession(worksheet);
+      } else if (simplifiedVersion) {
         const simplifiedWorksheet = await simplifyWorksheetForSvp(worksheet);
         simplifiedWorksheet.answersVisible = input.includeAnswers;
-        saveWorksheetToSession(simplifiedWorksheet);
-      } else if (input.simplifiedVersion) {
-        const simplifiedWorksheet = await simplifyWorksheetForSvp(worksheet);
-        simplifiedWorksheet.answersVisible = input.includeAnswers;
+        simplifiedWorksheet.allCapsForSvp = wantAllCaps;
         saveWorksheetToSession(worksheet, simplifiedWorksheet);
+        fetch("/api/analytics/record", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ basicAndSvp: 1 }),
+        }).catch(() => {});
       } else {
         saveWorksheetToSession(worksheet);
       }
       router.push("/result");
-    } catch {
-      setError(TEXTS.errorGenerationFailed);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : TEXTS.errorGenerationFailed;
+      setError(message);
+      console.error("Generování pracovního listu:", err);
     } finally {
       setLoading(false);
     }
@@ -245,16 +257,36 @@ export default function CreateFromTopicPage() {
                   className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5"
                 >
                   <span className="text-sm font-medium text-slate-800">{t.label}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={10}
-                    className="w-20 text-center"
-                    value={input.taskTypeCounts?.[t.value] ?? 0}
-                    onChange={(e) =>
-                      setTaskTypeCount(t.value, Number(e.target.value) || 0)
-                    }
-                  />
+                  <div className="w-20 shrink-0">
+                    <input
+                      type="number"
+                      min={0}
+                      max={10}
+                      aria-label={`Počet úloh: ${t.label}`}
+                      className="w-20 text-center hidden sm:block"
+                      value={input.taskTypeCounts?.[t.value] ?? 0}
+                      onChange={(e) =>
+                        setTaskTypeCount(t.value, Math.max(0, Math.min(10, Number(e.target.value) || 0)))
+                      }
+                    />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={2}
+                      aria-label={`Počet úloh: ${t.label}`}
+                      className="w-20 text-center sm:hidden"
+                      value={input.taskTypeCounts?.[t.value] ?? 0}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "");
+                        if (raw === "") setTaskTypeCount(t.value, 0);
+                        else {
+                          const n = parseInt(raw, 10);
+                          if (!Number.isNaN(n)) setTaskTypeCount(t.value, Math.max(0, Math.min(10, n)));
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               ))}
               <p className="text-xs text-slate-500">Celkem otázek: {totalTasks}</p>
@@ -313,22 +345,50 @@ export default function CreateFromTopicPage() {
               />
               <span className="text-sm font-medium text-slate-700">{TEXTS.includeAnswers}</span>
             </label>
-            <label className="flex cursor-pointer items-center gap-3">
-              <input
-                type="checkbox"
-                checked={input.simplifiedVersion}
-                onChange={(e) =>
-                  setInput((p) => ({
-                    ...p,
-                    simplifiedVersion: e.target.checked,
-                  }))
-                }
-                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="text-sm font-medium text-slate-700">
-                {TEXTS.simplifiedVersion}
-              </span>
-            </label>
+            {input.schoolType === "basic" && (
+              <div className="space-y-3">
+                <label htmlFor="topic-simplified-version" className="flex cursor-pointer items-center gap-3">
+                  <input
+                    id="topic-simplified-version"
+                    type="checkbox"
+                    checked={simplifiedVersion}
+                    onChange={(e) => setSimplifiedVersion(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm font-medium text-slate-700">
+                    {TEXTS.simplifiedVersion}
+                  </span>
+                </label>
+                <label
+                  htmlFor="topic-all-caps-svp"
+                  className={`flex cursor-pointer items-center gap-3 ${!simplifiedVersion ? "hidden" : ""}`}
+                >
+                  <input
+                    id="topic-all-caps-svp"
+                    type="checkbox"
+                    checked={allCapsForSvp}
+                    onChange={(e) => setAllCapsForSvp(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm font-medium text-slate-700">
+                    {TEXTS.allCapsForSvp}
+                  </span>
+                </label>
+              </div>
+            )}
+            {input.schoolType === "lmp" && (
+              <label className="flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={allCapsForSvp}
+                  onChange={(e) => setAllCapsForSvp(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm font-medium text-slate-700">
+                  {TEXTS.allCapsLmp}
+                </span>
+              </label>
+            )}
           </div>
 
           {error && (

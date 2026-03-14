@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { v4 as uuidv4 } from "uuid";
 import { getGeminiModel } from "@/services/geminiClient";
 import type { TextbookInput } from "@/types/inputs";
 import type { Worksheet, WorksheetTask, TaskType } from "@/types/worksheet";
-import { createMockWorksheet } from "@/lib/mockData";
+import { recordGeneration } from "@/lib/analyticsServer";
+import { randomizeTaskOrder } from "@/lib/taskOrder";
+import { buildTextbookTitle, getWorksheetLocale } from "@/lib/worksheetLocale";
 
 type RequestBody = TextbookInput;
 
@@ -41,7 +44,17 @@ export async function POST(req: Request) {
   }
 
   try {
-    const model = getGeminiModel();
+    let model;
+    try {
+      model = getGeminiModel();
+    } catch (geminiErr) {
+      console.error("worksheet-from-textbook: Gemini není nakonfigurován", geminiErr);
+      return NextResponse.json(
+        { error: "Generování vyžaduje API klíč (GEMINI_API_KEY). Přidejte ho do .env.local a restartujte server." },
+        { status: 503 }
+      );
+    }
+    const lang = body.language ?? "Čeština";
 
     const totalRequested =
       (body.taskTypeCounts.multiple_choice ?? 0) +
@@ -50,11 +63,20 @@ export async function POST(req: Request) {
       (body.taskTypeCounts.short_answer ?? 0) +
       (body.taskTypeCounts.reading_questions ?? 0);
 
-    // Vždy generujeme běžný pracovní list. Verze pro SVP vzniká až v druhém kroku (worksheet-simplify-for-svp).
-    const audienceInstruction = [
-      "Tento výstup je pro BĚŽNOU ZÁKLADNÍ ŠKOLU.",
-      "Otázky a odpovědi mají odpovídat standardní úrovni žáků bez speciálních potřeb.",
-    ].join(" ");
+    // Pro LMP generujeme podle RVP ZV–LMP (příloha upravující vzdělávání žáků s LMP); pro běžnou ZŠ standardní.
+    const isLmp = body.schoolType === "lmp";
+    const audienceInstruction = isLmp
+      ? [
+          "Tento výstup je pro ZÁKLADNÍ ŠKOLU PRO ŽÁKY S LEHKÝM MENTÁLNÍM POSTIŽENÍM (LMP), v souladu s RVP ZV–LMP.",
+          "Respektuj sníženou úroveň rozumových schopností žáků: u nich převažuje myšlení názorné a konkrétní, logické uvažování je spjaté s realitou; abstrakce omezená.",
+          "Pravidla pro text: JEDNODUCHÁ SLOVA, KRÁTKÉ VĚTY (řádově do 10–12 slov). Vyhni se cizím a odborným výrazům, nebo je hned jednoduše vysvětli.",
+          "Úlohy mají mít činnostní povahu, být prakticky zaměřené a využitelné v běžném životě. U každé úlohy méně pojmů, JASNÉ A STRUČNÉ instrukce, jeden krok nebo jeden jasný cíl.",
+          "Preferuj konkrétní a názorné úlohy před abstraktními. Obtížnost a tempo přizpůsob možnostem žáků s LMP; obsah musí být pro ně dosažitelný.",
+        ].join(" ")
+      : [
+          "Tento výstup je pro BĚŽNOU ZÁKLADNÍ ŠKOLU.",
+          "Otázky a odpovědi mají odpovídat standardní úrovni žáků bez speciálních potřeb.",
+        ].join(" ");
 
     const result = await model.generateContent({
       contents: [
@@ -63,7 +85,7 @@ export async function POST(req: Request) {
           parts: [
             {
               text: [
-                "Jsi učitel na české základní škole.",
+                "Jsi učitel na základní škole.",
                 "Na základě následujícího textu vytvoř pracovní list.",
                 "",
                 "TEXT Z UČEBNICE:",
@@ -71,6 +93,8 @@ export async function POST(req: Request) {
                 "",
                 `Předmět: ${body.subject}, ročník: ${body.grade}.`,
                 `Účel: ${body.useCase}. Obtížnost: ${body.difficulty}.`,
+                "",
+                `DŮLEŽITÉ – Jazyk výstupu: Celý pracovní list musí být vygenerován výhradně v jazyce: ${lang}. Všechny texty v JSON (otázky, možnosti u výběru, správné odpovědi, vysvětlení) piš pouze v tomto jazyce. Nic nepiš v jiném jazyce.`,
                 "",
                 audienceInstruction,
                 "",
@@ -113,40 +137,48 @@ export async function POST(req: Request) {
       throw new Error("Model nevrátil žádné úlohy.");
     }
 
-    const usedTypes = Array.from(new Set(tasks.map((t) => t.type))) as TaskType[];
+    const orderedTasks = randomizeTaskOrder(tasks);
+    const usedTypes = Array.from(new Set(orderedTasks.map((t) => t.type))) as TaskType[];
 
+    const locale = getWorksheetLocale(lang);
     const worksheet: Worksheet = {
       id: `ws-${Date.now()}`,
-      title: `Pracovní list: ${body.subject} – z učebnice`,
+      title: buildTextbookTitle(lang, body.subject),
       schoolType: body.schoolType,
       subject: body.subject,
       grade: body.grade,
       classLabel: body.classLabel,
-      language: "Čeština",
+      language: lang,
       sourceType: "textbook",
       sourceText: body.extractedText,
-      instructions: "Na základě přečteného textu odpovězte na následující otázky.",
+      instructions: locale.instructionsTextbook,
       difficulty: body.difficulty,
       useCase: body.useCase,
       taskTypes: usedTypes,
-      tasks,
+      tasks: orderedTasks,
       answersVisible: true,
       createdAt: new Date().toISOString(),
     };
 
+    const cookieStore = await cookies();
+    const betaUserId = cookieStore.get("beta_access")?.value;
+    await recordGeneration(
+      {
+        generated: 1,
+        basicAndLmp: body.schoolType === "lmp" ? 1 : 0,
+      },
+      betaUserId
+    );
+
     return NextResponse.json(worksheet);
   } catch (error) {
-    console.error("Gemini worksheet-from-textbook failed, using mock:", error);
-    const mock = createMockWorksheet({
-      sourceType: "textbook",
-      schoolType: body.schoolType,
-      subject: body.subject,
-      grade: body.grade,
-      classLabel: body.classLabel,
-      difficulty: body.difficulty,
-      useCase: body.useCase,
-    });
-    return NextResponse.json(mock, { status: 200 });
+    console.error("worksheet-from-textbook failed:", error);
+    const message =
+      error instanceof Error ? error.message : "Generování pracovního listu selhalo.";
+    return NextResponse.json(
+      { error: message },
+      { status: 500 }
+    );
   }
 }
 

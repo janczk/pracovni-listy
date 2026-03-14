@@ -6,6 +6,7 @@ const API_TOPIC = "/api/worksheet-from-topic";
 const API_TEXTBOOK = "/api/worksheet-from-textbook";
 const API_REGENERATE = "/api/worksheet-regenerate-task";
 const API_SIMPLIFY_SVP = "/api/worksheet-simplify-for-svp";
+const API_SIMPLIFY_TASK_SVP = "/api/worksheet-simplify-task-for-svp";
 
 async function postJson<TInput, TOutput>(url: string, body: TInput): Promise<TOutput> {
   const res = await fetch(url, {
@@ -14,7 +15,14 @@ async function postJson<TInput, TOutput>(url: string, body: TInput): Promise<TOu
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    throw new Error(`Request to ${url} failed with status ${res.status}`);
+    let message = `Požadavek selhal (${res.status}).`;
+    try {
+      const data = (await res.json()) as { error?: string };
+      if (data?.error && typeof data.error === "string") message = data.error;
+    } catch {
+      // ignorovat chybu parsování
+    }
+    throw new Error(message);
   }
   return (await res.json()) as TOutput;
 }
@@ -65,6 +73,20 @@ export async function simplifyWorksheetForSvp(worksheet: Worksheet): Promise<Wor
     });
   } catch (err) {
     console.error("simplifyWorksheetForSvp failed:", err);
+    throw err;
+  }
+}
+
+/**
+ * Zjednoduší jednu úlohu pro SVP. Použij pro inkrementální aktualizaci SVP verze.
+ */
+export async function simplifyTaskForSvp(task: WorksheetTask): Promise<WorksheetTask> {
+  try {
+    return await postJson<{ task: WorksheetTask }, WorksheetTask>(API_SIMPLIFY_TASK_SVP, {
+      task,
+    });
+  } catch (err) {
+    console.error("simplifyTaskForSvp failed:", err);
     throw err;
   }
 }

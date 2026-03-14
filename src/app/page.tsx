@@ -40,6 +40,10 @@ export default function HomePage() {
             </span>
           </Link>
         </div>
+
+        <p className="mt-16 text-center text-sm text-slate-500">
+          MDM pro školy · iSmart premium s.r.o. · Jan Kučeřík
+        </p>
       </div>
     </main>
   );

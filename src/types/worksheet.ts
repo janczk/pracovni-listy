@@ -31,7 +31,7 @@ export interface WorksheetTask {
 }
 
 /** Typ školy – ukládáme pro LLM (SVP = zjednodušená verze) */
-export type SchoolType = "basic" | "svp";
+export type SchoolType = "basic" | "svp" | "lmp";
 
 export interface Worksheet {
   id: string;
@@ -51,5 +51,7 @@ export interface Worksheet {
   taskTypes: TaskType[];
   tasks: WorksheetTask[];
   answersVisible: boolean;
+  /** Zobrazit a tisknout/PDF v celém rozsahu velkým písmenem (pro žáky s SVP). */
+  allCapsForSvp?: boolean;
   createdAt: string;
 }

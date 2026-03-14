@@ -10,8 +10,13 @@ import {
   Font,
 } from "@react-pdf/renderer";
 import type { Worksheet, WorksheetTask } from "@/types/worksheet";
-import { TASK_TYPE_LABELS } from "@/lib/czech";
-import { formatOptionWithLabel, getCorrectOptionIndex, formatTrueFalseAnswer } from "@/lib/optionLabels";
+import { formatOptionWithLabel, getCorrectOptionIndex } from "@/lib/optionLabels";
+import {
+  getTaskTypeLabels,
+  getWorksheetUiStrings,
+  formatSubjectGrade,
+  formatTrueFalseForDisplay,
+} from "@/lib/worksheetLabelsByLanguage";
 
 // Arial (Liberation Sans) – plná podpora české diakritiky, metrická náhrada Arial
 Font.register({
@@ -23,6 +28,7 @@ Font.register({
 });
 
 const MARGIN = 50;
+const FOOTER_HEIGHT = 24;
 
 /** @react-pdf/renderer vyžaduje, aby děti <Text> byly řetězce. */
 function safeText(value: unknown): string {
@@ -35,8 +41,29 @@ function safeText(value: unknown): string {
 const styles = StyleSheet.create({
   page: {
     padding: MARGIN,
+    paddingBottom: MARGIN + FOOTER_HEIGHT,
     fontSize: 11,
     fontFamily: "Arial",
+  },
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: FOOTER_HEIGHT,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    fontSize: 10,
+    color: "#475569",
+    fontFamily: "Arial",
+    fontWeight: 700,
+  },
+  footerText: {
+    fontSize: 10,
+    color: "#475569",
+    fontFamily: "Arial",
+    fontWeight: 700,
   },
   title: {
     fontSize: 18,
@@ -138,10 +165,16 @@ const styles = StyleSheet.create({
   },
 });
 
-function TaskLabelPdf({ type }: { type: WorksheetTask["type"] }) {
+function TaskLabelPdf({
+  label,
+  capsStyle = {},
+}: {
+  label: string;
+  capsStyle?: { textTransform?: "uppercase" };
+}) {
   return (
-    <Text style={styles.taskLabel}>
-      {safeText(TASK_TYPE_LABELS[type as keyof typeof TASK_TYPE_LABELS] ?? type)}
+    <Text style={[styles.taskLabel, capsStyle]}>
+      {safeText(label)}
     </Text>
   );
 }
@@ -166,24 +199,24 @@ export function WorksheetPdfDocument({
   const logo = logoUrl ? (
     <Image source={{ uri: logoUrl }} style={styles.logo} />
   ) : null;
+  const capsStyle = worksheet.allCapsForSvp ? { textTransform: "uppercase" as const } : {};
+  const lang = worksheet.language ?? "Čeština";
+  const taskLabels = getTaskTypeLabels(lang);
+  const ui = getWorksheetUiStrings(lang);
 
   if (variant === "teacher") {
     return (
       <Document>
-        <Page size="A4" style={styles.page}>
+        <Page size="A4" style={styles.page} wrap>
           {logo}
-          <Text style={styles.answerKeyTitle}>Klíč správných odpovědí</Text>
-          <Text style={styles.meta}>
+          <Text style={[styles.answerKeyTitle, capsStyle]}>{ui.answerKeyTitle}</Text>
+          <Text style={[styles.meta, capsStyle]}>
             {safeText(worksheet.title)}
             {" · "}
-            {safeText(worksheet.subject)}
-            {" · "}
-            {safeText(worksheet.grade)}
-            {" ročník"}
-            {worksheet.classLabel ? `, ${safeText(worksheet.classLabel)}` : ""}
+            {formatSubjectGrade(lang, worksheet.subject, worksheet.grade, worksheet.classLabel)}
           </Text>
           {worksheet.tasks.map((task, index) => (
-            <Text key={task.id} style={styles.answerItem}>
+            <Text key={task.id} style={[styles.answerItem, capsStyle]}>
               {`${index + 1}. ${
                 task.type === "draw_picture"
                   ? "—"
@@ -200,9 +233,10 @@ export function WorksheetPdfDocument({
                         : "—";
                     })()
                   : task.type === "true_false"
-                    ? (formatTrueFalseAnswer(
-                        Array.isArray(task.answer) ? task.answer[0] : task.answer
-                      ) ?? "—")
+                    ? (formatTrueFalseForDisplay(
+                        Array.isArray(task.answer) ? task.answer[0] : task.answer,
+                        lang
+                      ) || "—")
                     : (() => {
                         const a = task.answer;
                         return a != null
@@ -214,6 +248,12 @@ export function WorksheetPdfDocument({
               }`}
             </Text>
           ))}
+          <View fixed style={styles.footer}>
+            <Text
+              render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+              style={styles.footerText}
+            />
+          </View>
         </Page>
       </Document>
     );
@@ -221,39 +261,35 @@ export function WorksheetPdfDocument({
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="A4" style={styles.page} wrap>
         {logo}
-        <Text style={styles.title}>{safeText(worksheet.title)}</Text>
-        <Text style={styles.meta}>
-          {safeText(worksheet.subject)}
-          {" · "}
-          {safeText(worksheet.grade)}
-          {" ročník"}
-          {worksheet.classLabel ? `, ${safeText(worksheet.classLabel)}` : ""}
+        <Text style={[styles.title, capsStyle]}>{safeText(worksheet.title)}</Text>
+        <Text style={[styles.meta, capsStyle]}>
+          {formatSubjectGrade(lang, worksheet.subject, worksheet.grade, worksheet.classLabel)}
         </Text>
-        <Text style={styles.nameLabel}>Jméno a příjmení:</Text>
+        <Text style={[styles.nameLabel, capsStyle]}>{ui.nameLabel}</Text>
         <View style={styles.nameSpace} />
-        <Text style={styles.instructions}>{safeText(worksheet.instructions)}</Text>
+        <Text style={[styles.instructions, capsStyle]}>{safeText(worksheet.instructions)}</Text>
 
         {worksheet.tasks.map((task, index) => (
           <View key={task.id} style={styles.taskBlock} wrap={false}>
-            <TaskLabelPdf type={task.type} />
-            <Text style={styles.taskQuestion}>
+            <TaskLabelPdf label={taskLabels[task.type]} capsStyle={capsStyle} />
+            <Text style={[styles.taskQuestion, capsStyle]}>
               {`${index + 1}. ${safeText(task.question)}`}
             </Text>
             {task.options && task.options.length > 0 && (
               <View style={styles.taskOptions}>
                 {task.options.map((opt, j) => (
                   <View key={j} style={styles.taskOptionItem}>
-                    <Text>{`• ${formatOptionWithLabel(j, safeText(opt))}`}</Text>
+                    <Text style={capsStyle}>{`• ${formatOptionWithLabel(j, safeText(opt))}`}</Text>
                   </View>
                 ))}
               </View>
             )}
             {task.type === "true_false" && (
               <View style={styles.trueFalseChoiceRow}>
-                <Text style={styles.trueFalseOption}>Ano</Text>
-                <Text style={styles.trueFalseOptionNe}>Ne</Text>
+                <Text style={[styles.trueFalseOption, capsStyle]}>{ui.yes}</Text>
+                <Text style={[styles.trueFalseOptionNe, capsStyle]}>{ui.no}</Text>
               </View>
             )}
             {(task.type === "short_answer" || task.type === "reading_questions") && (
@@ -264,6 +300,12 @@ export function WorksheetPdfDocument({
             )}
           </View>
         ))}
+        <View fixed style={styles.footer}>
+          <Text
+            render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+            style={styles.footerText}
+          />
+        </View>
       </Page>
     </Document>
   );

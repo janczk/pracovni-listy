@@ -35,6 +35,10 @@ export const TEXTS = {
   intendedUse: "Účel použití",
   includeAnswers: "Zobrazit odpovědi v náhledu",
   simplifiedVersion: "Přidat verzi pracovního listu pro žáky s SVP (zjednodušená verze)",
+  /** Pro LMP: pouze velké písmo, bez „pro SVP“. */
+  allCapsLmp: "Pracovní list velkým písmenem",
+  /** Pro běžnou ZŠ při SVP verzi. */
+  allCapsForSvp: "Pracovní list velkým písmenem (pro žáky s SVP)",
 
   uploadFiles: "Nahrát soubory",
   uploadFilesHint: "Obrázky (JPEG, PNG, WebP) nebo PDF. Nejvýše 5 souborů.",
@@ -85,10 +89,10 @@ export const TEXTS = {
   errorUploadFirst: "Nejprve nahrajte soubory a rozpoznejte text.",
 } as const;
 
-/** Typ školy – pro přípravu LLM (SVP = zjednodušený výklad, jednodušší látka) */
-export const SCHOOL_TYPES: { value: "basic" | "svp"; label: string }[] = [
+/** Typ školy – pro přípravu LLM (LMP = škola pro žáky s lehkým mentálním postižením) */
+export const SCHOOL_TYPES: { value: "basic" | "lmp"; label: string }[] = [
   { value: "basic", label: "Základní škola" },
-  { value: "svp", label: "Základní škola pro žáky s SVP" },
+  { value: "lmp", label: "Základní škola pro žáky s lehkým mentálním postižením (LMP)" },
 ];
 
 /** Předměty – hodnota se ukládá do dat */
@@ -107,8 +111,10 @@ export const GRADES = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
 export const LANGUAGES: { value: string; label: string }[] = [
   { value: "Čeština", label: "Čeština" },
   { value: "Angličtina", label: "Angličtina" },
-  { value: "Slovenština", label: "Slovenština" },
   { value: "Němčina", label: "Němčina" },
+  { value: "Francouzština", label: "Francouzština" },
+  { value: "Španělština", label: "Španělština" },
+  { value: "Ukrajinština", label: "Ukrajinština" },
 ];
 
 export const OUTPUT_TYPES: { value: OutputType; label: string }[] = [
@@ -172,7 +178,8 @@ export const SOURCE_TYPE_LABELS: Record<"topic" | "textbook", string> = {
   textbook: "Z učebnice",
 };
 
-export const SCHOOL_TYPE_LABELS: Record<"basic" | "svp", string> = {
+export const SCHOOL_TYPE_LABELS: Record<"basic" | "svp" | "lmp", string> = {
   basic: "Základní škola",
-  svp: "Základní škola pro žáky s SVP",
+  svp: "Zjednodušená verze (SVP)",
+  lmp: "Základní škola pro žáky s lehkým mentálním postižením (LMP)",
 };

@@ -26,6 +26,20 @@
   }
 }
 
+/* Celý pracovní list velkým písmenem (SVP/LMP) – včetně titulku, zadání, otázek, možností i odpovědí */
+.worksheet-all-caps,
+.worksheet-all-caps input,
+.worksheet-all-caps textarea,
+.worksheet-all-caps p,
+.worksheet-all-caps li,
+.worksheet-all-caps h1,
+.worksheet-all-caps h2,
+.worksheet-all-caps h3,
+.worksheet-all-caps span,
+.worksheet-all-caps label {
+  text-transform: uppercase;
+}
+
 @media print {
   body * {
     visibility: hidden;
@@ -37,7 +51,9 @@
   body.print-student #print-area-student,
   body.print-student #print-area-student *,
   body.print-student #print-area-student-simplified,
-  body.print-student #print-area-student-simplified * {
+  body.print-student #print-area-student-simplified *,
+  body.print-student .print-page-footer,
+  body.print-student .print-page-footer::after {
     visibility: visible;
   }
   body.print-student #print-area-student,
@@ -53,7 +69,9 @@
   body.print-teacher #print-area-teacher,
   body.print-teacher #print-area-teacher *,
   body.print-teacher #print-area-teacher-simplified,
-  body.print-teacher #print-area-teacher-simplified * {
+  body.print-teacher #print-area-teacher-simplified *,
+  body.print-teacher .print-page-footer,
+  body.print-teacher .print-page-footer::after {
     visibility: visible;
   }
   body.print-teacher #print-area-teacher,
@@ -64,5 +82,19 @@
   }
   body.print-teacher #print-area-teacher-simplified {
     page-break-before: always;
+  }
+  /* Patička s číslem stránky na každé vytištěné stránce (tučně) */
+  .print-page-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+  }
+  .print-page-footer::after {
+    content: counter(page) " / " counter(pages);
   }
 }

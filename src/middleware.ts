@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { ANALYTICS_ALLOWED_BETA_CODE } from "@/lib/constants";
 
 const BETA_COOKIE = "beta_access";
 
@@ -12,6 +13,15 @@ export function middleware(request: NextRequest) {
   }
   // Statické assety a Next.js interní cesty
   if (path.startsWith("/_next") || path.startsWith("/fonts") || path.includes(".")) {
+    return NextResponse.next();
+  }
+
+  // Statistiky jen pro účet beta-pl-001 (vždy, i bez zapnuté beta brány)
+  if (path === "/analytics") {
+    const cookieValue = request.cookies.get(BETA_COOKIE)?.value?.trim().toLowerCase();
+    if (cookieValue !== ANALYTICS_ALLOWED_BETA_CODE) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
     return NextResponse.next();
   }
 

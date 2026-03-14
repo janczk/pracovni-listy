@@ -29,10 +29,11 @@ export async function POST(req: Request) {
   }
 
   const res = NextResponse.json({ ok: true });
+  const isProduction = process.env.NODE_ENV === "production";
   res.cookies.set(BETA_COOKIE, code, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: isProduction,
+    sameSite: "lax",
     path: "/",
     maxAge: COOKIE_MAX_AGE,
   });

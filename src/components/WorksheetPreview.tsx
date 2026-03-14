@@ -1,8 +1,9 @@
 "use client";
 
 import type { Worksheet, WorksheetTask } from "@/types/worksheet";
-import { TEXTS, TASK_TYPE_LABELS, TASK_TYPES } from "@/lib/czech";
-import { formatOptionWithLabel, getCorrectOptionIndex, formatTrueFalseAnswer } from "@/lib/optionLabels";
+import { TEXTS, TASK_TYPES } from "@/lib/czech";
+import { formatOptionWithLabel, getCorrectOptionIndex } from "@/lib/optionLabels";
+import { getTaskTypeLabels, getWorksheetUiStrings, formatSubjectGrade, formatTrueFalseForDisplay } from "@/lib/worksheetLabelsByLanguage";
 
 interface WorksheetPreviewProps {
   worksheet: Worksheet;
@@ -29,10 +30,15 @@ export function WorksheetPreview({
   onAddTask,
   regeneratingTaskId,
 }: WorksheetPreviewProps) {
+  const allCaps = Boolean(worksheet.allCapsForSvp);
+  const lang = worksheet.language ?? "Čeština";
+  const taskLabels = getTaskTypeLabels(lang);
+  const ui = getWorksheetUiStrings(lang);
+
   return (
     <>
-      {/* Screen view: editable + actions */}
-      <div className="print:hidden space-y-6">
+      {/* Screen view: editable + actions – při SVP/LMP celý list včetně otázek a zadání velkým písmenem */}
+      <div className={`print:hidden space-y-6 ${allCaps ? "worksheet-all-caps" : ""}`}>
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1.5">
             {TEXTS.title}
@@ -56,10 +62,7 @@ export function WorksheetPreview({
           />
         </div>
         <p className="text-sm text-slate-600">
-          {worksheet.subject}
-          {" · "}
-          {worksheet.grade}. ročník
-          {worksheet.classLabel ? `, ${worksheet.classLabel}` : ""}
+          {formatSubjectGrade(lang, worksheet.subject, worksheet.grade, worksheet.classLabel)}
         </p>
 
         <ol className="list-decimal list-inside space-y-4">
@@ -70,7 +73,7 @@ export function WorksheetPreview({
                   {task.id.startsWith("manual-") ? (
                     <div className="flex flex-col gap-1">
                       <span className="text-xs font-semibold text-primary-600 uppercase tracking-wider">
-                        {TASK_TYPE_LABELS[task.type]}
+                        {taskLabels[task.type]}
                       </span>
                       <div className="flex flex-wrap gap-3 mt-1">
                         {TASK_TYPES.map((t) => (
@@ -86,14 +89,14 @@ export function WorksheetPreview({
                               onChange={() => onEditTask(task.id, { type: t.value })}
                               className="h-3.5 w-3.5 text-primary-600 focus:ring-primary-500"
                             />
-                            <span>{t.label}</span>
+                            <span>{taskLabels[t.value]}</span>
                           </label>
                         ))}
                       </div>
                     </div>
                   ) : (
                     <span className="text-xs font-semibold text-primary-600 uppercase tracking-wider">
-                      {TASK_TYPE_LABELS[task.type]}
+                      {taskLabels[task.type]}
                     </span>
                   )}
                   <textarea
@@ -146,8 +149,9 @@ export function WorksheetPreview({
                             : task.answer;
                         })()
                       : task.type === "true_false"
-                        ? formatTrueFalseAnswer(
-                            Array.isArray(task.answer) ? task.answer[0] : task.answer
+                        ? formatTrueFalseForDisplay(
+                            Array.isArray(task.answer) ? task.answer[0] : task.answer,
+                            lang
                           )
                         : Array.isArray(task.answer)
                           ? task.answer.join(", ")
@@ -176,7 +180,7 @@ export function WorksheetPreview({
         {worksheet.answersVisible && (
           <div className="rounded-xl border border-slate-200 bg-primary-50/40 p-4">
             <h3 className="text-sm font-semibold text-slate-800">
-              {TEXTS.answerKey}
+              {ui.answerKeyTitle}
             </h3>
             <ol className="list-decimal list-inside mt-2 space-y-1 text-sm text-slate-700">
               {worksheet.tasks.map((task, i) => (
@@ -193,8 +197,9 @@ export function WorksheetPreview({
                           : task.answer;
                       })()
                     : task.type === "true_false"
-                      ? formatTrueFalseAnswer(
-                          Array.isArray(task.answer) ? task.answer[0] : task.answer
+                      ? formatTrueFalseForDisplay(
+                          Array.isArray(task.answer) ? task.answer[0] : task.answer,
+                          lang
                         )
                       : Array.isArray(task.answer)
                         ? task.answer.join(", ")

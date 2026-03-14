@@ -14,11 +14,30 @@ import {
   SOURCE_TYPE_LABELS,
   SCHOOL_TYPE_LABELS,
 } from "@/lib/czech";
-import { regenerateSingleTask, generateWorksheetFromTopic, simplifyWorksheetForSvp } from "@/services/worksheetGeneration";
+import { formatSubjectGrade } from "@/lib/worksheetLabelsByLanguage";
+import { regenerateSingleTask, generateWorksheetFromTopic, simplifyWorksheetForSvp, simplifyTaskForSvp } from "@/services/worksheetGeneration";
 import type { Worksheet, WorksheetTask } from "@/types/worksheet";
 import type { TopicInput } from "@/types/inputs";
 
 type PreviewVariant = "normal" | "simplified";
+
+const SVP_TITLE_SUFFIX = " (zjednodušená verze pro SVP)";
+const SVP_INSTRUCTIONS = "Vyplň pracovní list podle zadání. (Zjednodušená verze pro snazší čtení.)";
+
+function taskContentEquals(a: WorksheetTask | undefined, b: WorksheetTask): boolean {
+  if (!a) return false;
+  if (a.type !== b.type || a.question !== b.question) return false;
+  const optsA = a.options ?? [];
+  const optsB = b.options ?? [];
+  if (optsA.length !== optsB.length || optsA.some((o, i) => o !== optsB[i])) return false;
+  const ansA = a.answer;
+  const ansB = b.answer;
+  if (Array.isArray(ansA) !== Array.isArray(ansB)) return false;
+  if (Array.isArray(ansA) && Array.isArray(ansB)) {
+    if (ansA.length !== ansB.length || ansA.some((v, i) => v !== ansB[i])) return false;
+  } else if (ansA !== ansB) return false;
+  return true;
+}
 
 export default function ResultPage() {
   const [worksheet, setWorksheet] = useState<Worksheet | null>(null);
@@ -40,7 +59,7 @@ export default function ResultPage() {
   const displayedWorksheet: Worksheet =
     previewVariant === "simplified" && simplifiedWorksheet ? simplifiedWorksheet : worksheet!;
 
-  /** Uloží změny. Při úpravě běžné verze a existující SVP verze znovu vygeneruje SVP na pozadí (UI se neblokuje). */
+  /** Uloží změny. Při existující SVP verze aktualizuje jen změněné části (název lokálně, úlohy přes API jen u změněných). */
   const persist = async (next: Worksheet) => {
     if (!worksheet) return;
     if (previewVariant === "simplified" && simplifiedWorksheet) {
@@ -52,14 +71,43 @@ export default function ResultPage() {
     if (simplifiedWorksheet) {
       saveWorksheetToSession(next, simplifiedWorksheet);
       setSvpSyncError(null);
-      simplifyWorksheetForSvp(next)
-        .then((simplified) => {
-          simplified.answersVisible = next.answersVisible;
-          setSimplifiedWorksheet(simplified);
-          saveWorksheetToSession(next, simplified);
+
+      const titleChanged = next.title !== worksheet.title;
+      const prevTasks = worksheet.tasks;
+      const nextTasks = next.tasks;
+
+      const tasksToSimplify = nextTasks.filter((nextTask) => {
+        const prevTask = prevTasks.find((p) => p.id === nextTask.id);
+        return !taskContentEquals(prevTask, nextTask);
+      });
+
+      if (!titleChanged && tasksToSimplify.length === 0) {
+        return;
+      }
+
+      const nextSimplified: Worksheet = {
+        ...simplifiedWorksheet,
+        title: titleChanged ? `${next.title}${SVP_TITLE_SUFFIX}` : simplifiedWorksheet.title,
+        instructions: SVP_INSTRUCTIONS,
+        answersVisible: next.answersVisible,
+        tasks: [...simplifiedWorksheet.tasks],
+      };
+
+      if (tasksToSimplify.length === 0) {
+        setSimplifiedWorksheet(nextSimplified);
+        saveWorksheetToSession(next, nextSimplified);
+        return;
+      }
+
+      Promise.all(tasksToSimplify.map((t) => simplifyTaskForSvp(t)))
+        .then((results) => {
+          const byId = new Map(results.map((r) => [r.id, r]));
+          nextSimplified.tasks = nextTasks.map((t) => byId.get(t.id) ?? simplifiedWorksheet.tasks.find((s) => s.id === t.id) ?? t);
+          setSimplifiedWorksheet(nextSimplified);
+          saveWorksheetToSession(next, nextSimplified);
         })
         .catch((err) => {
-          console.error("SVP sync failed:", err);
+          console.error("SVP partial sync failed:", err);
           setSvpSyncError("Verze pro SVP se nepodařila aktualizovat. Běžná verze je uložená.");
         });
     } else {
@@ -143,7 +191,7 @@ export default function ResultPage() {
         {} as TopicInput["taskTypeCounts"]
       );
       const input: TopicInput = {
-        schoolType: worksheet.schoolType ?? "basic",
+        schoolType: worksheet.schoolType === "svp" ? "basic" : (worksheet.schoolType ?? "basic"),
         subject: worksheet.subject,
         grade: worksheet.grade,
         classLabel: worksheet.classLabel,
@@ -237,8 +285,12 @@ export default function ResultPage() {
                   <li>Typ školy: {SCHOOL_TYPE_LABELS[worksheet.schoolType]}</li>
                 )}
                 <li>
-                  {worksheet.subject} · {worksheet.grade}. ročník
-                  {worksheet.classLabel ? `, ${worksheet.classLabel}` : ""}
+                  {formatSubjectGrade(
+                    worksheet.language ?? "Čeština",
+                    worksheet.subject,
+                    worksheet.grade,
+                    worksheet.classLabel
+                  )}
                 </li>
                 <li>Obtížnost: {DIFFICULTY_LABELS[worksheet.difficulty]}</li>
                 <li>Účel: {USE_CASE_LABELS[worksheet.useCase]}</li>

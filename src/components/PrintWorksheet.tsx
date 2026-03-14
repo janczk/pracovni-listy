@@ -1,13 +1,18 @@
 import type { Worksheet, WorksheetTask } from "@/types/worksheet";
-import { TASK_TYPE_LABELS } from "@/lib/czech";
-import { formatOptionWithLabel, getCorrectOptionIndex, formatTrueFalseAnswer } from "@/lib/optionLabels";
+import { formatOptionWithLabel, getCorrectOptionIndex } from "@/lib/optionLabels";
+import {
+  getTaskTypeLabels,
+  getWorksheetUiStrings,
+  formatSubjectGrade,
+  formatTrueFalseForDisplay,
+} from "@/lib/worksheetLabelsByLanguage";
 
 const SVP_HEADING = "Zjednodušená verze (pro žáky se speciálními vzdělávacími potřebami)";
 
-function TaskLabel({ type }: { type: WorksheetTask["type"] }) {
+function TaskLabel({ type, label }: { type: WorksheetTask["type"]; label: string }) {
   return (
     <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-      {TASK_TYPE_LABELS[type]}
+      {label}
     </span>
   );
 }
@@ -21,8 +26,12 @@ function StudentBlock({
   id: string;
   titleAbove?: string;
 }) {
+  const allCaps = Boolean(worksheet.allCapsForSvp);
+  const lang = worksheet.language ?? "Čeština";
+  const taskLabels = getTaskTypeLabels(lang);
+  const ui = getWorksheetUiStrings(lang);
   return (
-    <div id={id} className="hidden p-8 max-w-none print:block" aria-hidden="true">
+    <div id={id} className={`hidden p-8 max-w-none print:block ${allCaps ? "worksheet-all-caps" : ""}`} aria-hidden="true">
       {titleAbove && (
         <h2 className="text-lg font-semibold text-slate-800 mb-4 mt-0">{titleAbove}</h2>
       )}
@@ -31,13 +40,10 @@ function StudentBlock({
         {worksheet.title}
       </h1>
       <p className="text-sm text-slate-600 mb-2">
-        {worksheet.subject}
-        {" · "}
-        {worksheet.grade}. ročník
-        {worksheet.classLabel ? `, ${worksheet.classLabel}` : ""}
+        {formatSubjectGrade(lang, worksheet.subject, worksheet.grade, worksheet.classLabel)}
       </p>
       <p className="text-sm text-slate-800 mb-1 font-normal">
-        Jméno a příjmení:
+        {ui.nameLabel}
       </p>
       <div
         className="min-h-[2.75rem] border-b border-slate-300 mb-6"
@@ -49,7 +55,7 @@ function StudentBlock({
       <ol className="list-decimal list-inside space-y-4">
         {worksheet.tasks.map((task) => (
           <li key={task.id} className="pl-2">
-            <TaskLabel type={task.type} />
+            <TaskLabel type={task.type} label={taskLabels[task.type]} />
             <p className="mt-1 text-slate-800 font-normal">{task.question}</p>
             {task.options && task.options.length > 0 && (
               <ul className="mt-2 ml-4 space-y-1 text-slate-700 font-normal">
@@ -57,6 +63,11 @@ function StudentBlock({
                   <li key={j}>{formatOptionWithLabel(j, opt)}</li>
                 ))}
               </ul>
+            )}
+            {task.type === "true_false" && (
+              <p className="mt-2 text-sm text-slate-600 font-normal">
+                {ui.yes} / {ui.no}
+              </p>
             )}
             {task.type === "draw_picture" && (
               <div
@@ -80,22 +91,22 @@ function TeacherBlock({
   id: string;
   titleAbove?: string;
 }) {
+  const allCaps = Boolean(worksheet.allCapsForSvp);
+  const lang = worksheet.language ?? "Čeština";
+  const ui = getWorksheetUiStrings(lang);
   return (
-    <div id={id} className="hidden p-8 max-w-none print:block" aria-hidden="true">
+    <div id={id} className={`hidden p-8 max-w-none print:block ${allCaps ? "worksheet-all-caps" : ""}`} aria-hidden="true">
       {titleAbove && (
         <h2 className="text-lg font-semibold text-slate-800 mb-4 mt-0">{titleAbove}</h2>
       )}
       <img src="/logo.png" alt="" className="h-10 w-10 mb-3 object-contain" />
       <h1 className="text-xl text-slate-900 mb-2 font-normal">
-        Klíč správných odpovědí
+        {ui.answerKeyTitle}
       </h1>
       <p className="text-sm text-slate-600 mb-4 font-normal">
         {worksheet.title}
         {" · "}
-        {worksheet.subject}
-        {" · "}
-        {worksheet.grade}. ročník
-        {worksheet.classLabel ? `, ${worksheet.classLabel}` : ""}
+        {formatSubjectGrade(lang, worksheet.subject, worksheet.grade, worksheet.classLabel)}
       </p>
       <ol className="list-decimal list-inside space-y-2 text-slate-700 font-normal">
         {worksheet.tasks.map((task) => (
@@ -112,8 +123,9 @@ function TeacherBlock({
                     : task.answer;
                 })()
               : task.type === "true_false"
-                ? formatTrueFalseAnswer(
-                    Array.isArray(task.answer) ? task.answer[0] : task.answer
+                ? formatTrueFalseForDisplay(
+                    Array.isArray(task.answer) ? task.answer[0] : task.answer,
+                    lang
                   )
                 : Array.isArray(task.answer)
                   ? task.answer.join(", ")
@@ -127,7 +139,7 @@ function TeacherBlock({
 
 /**
  * Tisk – bloky pro žáky a pro učitele. Při předání simplifiedWorksheet se tisknou dvě sady (běžná + zjednodušená).
- * Zobrazení řídí CSS (print-student / print-teacher).
+ * Číslo stránky (X / Y) na každé vytištěné stránce zobrazuje globální patička přes CSS (print-page-footer).
  */
 export function PrintWorksheet({
   worksheet,
@@ -155,6 +167,8 @@ export function PrintWorksheet({
           titleAbove={SVP_HEADING}
         />
       )}
+
+      <div className="print-page-footer" aria-hidden="true" />
     </>
   );
 }

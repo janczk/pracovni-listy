@@ -49,7 +49,16 @@ export async function POST(req: Request) {
   }
 
   try {
-    const model = getGeminiModel();
+    let model;
+    try {
+      model = getGeminiModel();
+    } catch (geminiErr) {
+      console.error("worksheet-simplify-for-svp: Gemini není nakonfigurován", geminiErr);
+      return NextResponse.json(
+        { error: "Generování vyžaduje API klíč (GEMINI_API_KEY). Přidejte ho do .env.local a restartujte server." },
+        { status: 503 }
+      );
+    }
 
     const hasEmptyAnswer = worksheet.tasks.some(
       (t) => t.answer === "" || t.answer === undefined || (Array.isArray(t.answer) && t.answer.length === 0)
@@ -140,8 +149,10 @@ export async function POST(req: Request) {
     return NextResponse.json(simplifiedWorksheet);
   } catch (error) {
     console.error("worksheet-simplify-for-svp failed:", error);
+    const message =
+      error instanceof Error ? error.message : "Zjednodušení pro SVP se nezdařilo.";
     return NextResponse.json(
-      { error: "Zjednodušení pro SVP se nezdařilo." },
+      { error: message },
       { status: 500 }
     );
   }

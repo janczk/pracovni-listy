@@ -21,6 +21,7 @@ export default function BetaGatePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: code.trim(), website: honeypot }),
+        credentials: "include",
       });
 
       const data = await res.json().catch(() => ({}));
@@ -37,7 +38,7 @@ export default function BetaGatePage() {
         return;
       }
 
-      window.location.href = "/";
+      window.location.assign("/");
     } catch {
       setError("Spojení se nezdařilo. Zkuste to znovu.");
       setLoading(false);
@@ -101,6 +102,12 @@ export default function BetaGatePage() {
             {loading ? "Ověřuji…" : "Vstoupit"}
           </Button>
         </form>
+
+        <p className="mt-8 pt-6 border-t border-slate-200 text-xs text-slate-500">
+          Generátor pracovních listů © {new Date().getFullYear()}
+          <br />
+          Autor: Jan Kučeřík
+        </p>
       </div>
     </main>
   );

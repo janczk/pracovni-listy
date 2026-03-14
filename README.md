@@ -20,3 +20,10 @@ Generátor pracovních listů (z tématu nebo z učebnice).
 - `npm run build` – produkční build
 - `npm run start` – spuštění produkčního serveru
 - `npm run lint` – kontrola kódu
+
+## Nasazení na Vercel a statistiky
+
+Na Vercelu nemá aplikace zapisovatelný souborový systém, proto se statistiky (počty vygenerovaných listů) ukládají do **Upstash Redis**.
+
+- **Lokálně:** statistiky se ukládají do souboru `data/usage-stats.json`.
+- **Na Vercelu:** přidejte v projektu integraci **Upstash Redis** (Vercel Marketplace → Redis). Vercel nastaví `UPSTASH_REDIS_REST_URL` a `UPSTASH_REDIS_REST_TOKEN`; při jejich přítomnosti aplikace ukládá statistiky do Redis a na Vercelu se trvale uchovají.

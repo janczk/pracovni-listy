@@ -25,3 +25,6 @@ npm-debug.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Lokální statistiky (data/usage-stats.json)
+data/

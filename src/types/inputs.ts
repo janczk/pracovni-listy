@@ -4,7 +4,7 @@ import type { TaskType, Difficulty, UseCase, OutputType } from "./worksheet";
 export type TaskTypeCounts = Partial<Record<TaskType, number>>;
 
 /** Typ školy – pro budoucí LLM (SVP = zjednodušený výklad, jednodušší látka) */
-export type SchoolType = "basic" | "svp";
+export type SchoolType = "basic" | "lmp";
 
 export interface TopicInput {
   /** Typ školy: základní nebo pro žáky s SVP */
@@ -22,6 +22,8 @@ export interface TopicInput {
   useCase: UseCase;
   includeAnswers: boolean;
   simplifiedVersion: boolean;
+  /** Verze velkým písmenem (pro žáky s SVP). */
+  allCapsForSvp?: boolean;
 }
 
 export interface TextbookInput {
@@ -33,9 +35,13 @@ export interface TextbookInput {
   /** Název třídy (např. 6.B) */
   classLabel?: string;
   subject: string;
+  /** Jazyk celého výstupu pracovního listu */
+  language: string;
   /** Počet otázek pro každý typ úlohy */
   taskTypeCounts: TaskTypeCounts;
   difficulty: Difficulty;
   useCase: UseCase;
   simplifiedVersion: boolean;
+  /** Verze velkým písmenem (pro žáky s SVP). */
+  allCapsForSvp?: boolean;
 }

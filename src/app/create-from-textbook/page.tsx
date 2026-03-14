@@ -13,6 +13,7 @@ import {
   SCHOOL_TYPES,
   SUBJECTS,
   GRADES,
+  LANGUAGES,
   OUTPUT_TYPES,
   TASK_TYPES_FOR_TEXTBOOK,
   DIFFICULTIES,
@@ -24,9 +25,9 @@ import type { OutputType, TaskType, Difficulty, UseCase } from "@/types/workshee
 const ACCEPT = ".pdf,image/jpeg,image/png,image/webp";
 
 const defaultTaskTypeCounts: TextbookInput["taskTypeCounts"] = {
-  multiple_choice: 1,
-  true_false: 1,
-  short_answer: 1,
+  multiple_choice: 0,
+  true_false: 0,
+  short_answer: 0,
   fill_in: 0,
   reading_questions: 0,
 };
@@ -45,12 +46,14 @@ export default function CreateFromTextbookPage() {
   const [grade, setGrade] = useState("6");
   const [classLabel, setClassLabel] = useState("");
   const [subject, setSubject] = useState("Dějepis");
+  const [language, setLanguage] = useState("Čeština");
   const [taskTypeCounts, setTaskTypeCounts] = useState<TextbookInput["taskTypeCounts"]>({
     ...defaultTaskTypeCounts,
   });
   const [difficulty, setDifficulty] = useState<Difficulty>("normal");
   const [useCase, setUseCase] = useState<UseCase>("revision");
   const [simplifiedVersion, setSimplifiedVersion] = useState(false);
+  const [allCapsForSvp, setAllCapsForSvp] = useState(false);
 
   const setTaskTypeCount = (t: TaskType, count: number) => {
     setTaskTypeCounts((prev) => ({
@@ -111,6 +114,7 @@ export default function CreateFromTextbookPage() {
         grade,
         classLabel: classLabel.trim() || undefined,
         subject,
+        language,
         taskTypeCounts,
         difficulty,
         useCase,
@@ -121,16 +125,28 @@ export default function CreateFromTextbookPage() {
         simplifiedVersion: false,
       });
       worksheet.answersVisible = true;
-      if (simplifiedVersion) {
+      if (schoolType === "lmp") {
+        worksheet.schoolType = "lmp";
+        worksheet.allCapsForSvp = allCapsForSvp;
+        saveWorksheetToSession(worksheet);
+      } else if (simplifiedVersion) {
         const simplifiedWorksheet = await simplifyWorksheetForSvp(worksheet);
         simplifiedWorksheet.answersVisible = true;
+        simplifiedWorksheet.allCapsForSvp = allCapsForSvp;
         saveWorksheetToSession(worksheet, simplifiedWorksheet);
+        fetch("/api/analytics/record", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ basicAndSvp: 1 }),
+        }).catch(() => {});
       } else {
         saveWorksheetToSession(worksheet);
       }
       router.push("/result");
-    } catch {
-      setError(TEXTS.errorGenerationFailed);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : TEXTS.errorGenerationFailed;
+      setError(message);
+      console.error("Generování pracovního listu:", err);
     } finally {
       setGenerating(false);
     }
@@ -302,6 +318,21 @@ export default function CreateFromTextbookPage() {
             />
           </FormField>
 
+          <FormField label={TEXTS.language} id="language">
+            <select
+              id="language"
+              className="w-full"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+            >
+              {LANGUAGES.map((l) => (
+                <option key={l.value} value={l.value}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          </FormField>
+
           <FormField
             label={TEXTS.taskTypes}
             id="taskTypes"
@@ -314,16 +345,36 @@ export default function CreateFromTextbookPage() {
                   className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5"
                 >
                   <span className="text-sm font-medium text-slate-800">{t.label}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={10}
-                    className="w-20 text-center"
-                    value={taskTypeCounts?.[t.value] ?? 0}
-                    onChange={(e) =>
-                      setTaskTypeCount(t.value, Number(e.target.value) || 0)
-                    }
-                  />
+                  <div className="w-20 shrink-0">
+                    <input
+                      type="number"
+                      min={0}
+                      max={10}
+                      aria-label={`Počet úloh: ${t.label}`}
+                      className="w-20 text-center hidden sm:block"
+                      value={taskTypeCounts?.[t.value] ?? 0}
+                      onChange={(e) =>
+                        setTaskTypeCount(t.value, Math.max(0, Math.min(10, Number(e.target.value) || 0)))
+                      }
+                    />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={2}
+                      aria-label={`Počet úloh: ${t.label}`}
+                      className="w-20 text-center sm:hidden"
+                      value={taskTypeCounts?.[t.value] ?? 0}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/\D/g, "");
+                        if (raw === "") setTaskTypeCount(t.value, 0);
+                        else {
+                          const n = parseInt(raw, 10);
+                          if (!Number.isNaN(n)) setTaskTypeCount(t.value, Math.max(0, Math.min(10, n)));
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               ))}
               <p className="text-xs text-slate-500">Celkem otázek: {totalTasks}</p>
@@ -364,18 +415,48 @@ export default function CreateFromTextbookPage() {
             </select>
           </FormField>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-            <label className="flex cursor-pointer items-center gap-3">
-              <input
-                type="checkbox"
-                checked={simplifiedVersion}
-                onChange={(e) => setSimplifiedVersion(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="text-sm font-medium text-slate-700">
-                {TEXTS.simplifiedVersion}
-              </span>
-            </label>
+          <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+            {schoolType === "basic" && (
+              <div className="space-y-3">
+                <label className="flex cursor-pointer items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={simplifiedVersion}
+                    onChange={(e) => setSimplifiedVersion(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm font-medium text-slate-700">
+                    {TEXTS.simplifiedVersion}
+                  </span>
+                </label>
+                <label
+                  className={`flex cursor-pointer items-center gap-3 ${!simplifiedVersion ? "hidden" : ""}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={allCapsForSvp}
+                    onChange={(e) => setAllCapsForSvp(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm font-medium text-slate-700">
+                    {TEXTS.allCapsForSvp}
+                  </span>
+                </label>
+              </div>
+            )}
+            {schoolType === "lmp" && (
+              <label className="flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={allCapsForSvp}
+                  onChange={(e) => setAllCapsForSvp(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm font-medium text-slate-700">
+                  {TEXTS.allCapsLmp}
+                </span>
+              </label>
+            )}
           </div>
 
           {error && (
