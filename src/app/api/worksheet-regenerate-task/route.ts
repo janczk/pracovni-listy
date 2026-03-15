@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getGeminiModel } from "@/services/geminiClient";
 import type { Worksheet, WorksheetTask } from "@/types/worksheet";
+import { REGENERATE_GENERATION_CONFIG } from "@/lib/geminiWorksheetConfig";
 
 interface RequestBody {
   worksheet: Worksheet;
@@ -72,6 +73,7 @@ export async function POST(req: Request) {
           ],
         },
       ],
+      generationConfig: REGENERATE_GENERATION_CONFIG,
     });
 
     const rawText = result.response.text();

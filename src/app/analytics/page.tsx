@@ -3,8 +3,15 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BETA_USER_LABELS } from "@/lib/constants";
+import { estimateCostUsdClient } from "@/lib/tokenCost";
 
-type DailyStats = { generated: number; basicAndLmp: number; basicAndSvp: number };
+type DailyStats = {
+  generated: number;
+  basicAndLmp: number;
+  basicAndSvp: number;
+  inputTokens?: number;
+  outputTokens?: number;
+};
 type StatsByDate = Record<string, DailyStats>;
 type StatsPayload = { overall: StatsByDate; byUser: Record<string, StatsByDate> };
 
@@ -25,10 +32,24 @@ function totalsFromStatsByDate(stats: StatsByDate): DailyStats {
       acc.generated += d.generated ?? 0;
       acc.basicAndLmp += d.basicAndLmp ?? 0;
       acc.basicAndSvp += d.basicAndSvp ?? 0;
+      acc.inputTokens = (acc.inputTokens ?? 0) + (d.inputTokens ?? 0);
+      acc.outputTokens = (acc.outputTokens ?? 0) + (d.outputTokens ?? 0);
       return acc;
     },
-    { generated: 0, basicAndLmp: 0, basicAndSvp: 0 }
+    { generated: 0, basicAndLmp: 0, basicAndSvp: 0, inputTokens: 0, outputTokens: 0 }
   );
+}
+
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)} M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)} k`;
+  return String(n);
+}
+
+function formatUsd(x: number): string {
+  if (x >= 1) return `$${x.toFixed(2)}`;
+  if (x >= 0.01) return `$${x.toFixed(3)}`;
+  return `$${x.toFixed(4)}`;
 }
 
 export default function AnalyticsPage() {
@@ -88,10 +109,18 @@ export default function AnalyticsPage() {
       acc.generated += t.generated;
       acc.basicAndLmp += t.basicAndLmp;
       acc.basicAndSvp += t.basicAndSvp;
+      acc.inputTokens = (acc.inputTokens ?? 0) + (t.inputTokens ?? 0);
+      acc.outputTokens = (acc.outputTokens ?? 0) + (t.outputTokens ?? 0);
       return acc;
     },
-    { generated: 0, basicAndLmp: 0, basicAndSvp: 0 }
+    { generated: 0, basicAndLmp: 0, basicAndSvp: 0, inputTokens: 0, outputTokens: 0 }
   );
+
+  const totalInput = totalsOverall.inputTokens ?? 0;
+  const totalOutput = totalsOverall.outputTokens ?? 0;
+  const totalCostUsd = estimateCostUsdClient(totalInput, totalOutput);
+  const costPerWorksheet =
+    totalsOverall.generated > 0 ? totalCostUsd / totalsOverall.generated : 0;
 
   return (
     <main className="min-h-screen">
@@ -114,8 +143,8 @@ export default function AnalyticsPage() {
         {dates.length === 0 ? (
           <p className="mt-2 text-slate-500">Zatím nejsou žádné záznamy.</p>
         ) : (
-          <div className="mt-4 rounded-xl border border-slate-200 bg-white overflow-hidden">
-            <table className="w-full text-left text-sm">
+          <div className="mt-4 rounded-xl border border-slate-200 bg-white overflow-x-auto overflow-y-hidden">
+            <table className="w-full text-left text-sm min-w-[640px]">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50">
                   <th className="px-4 py-3 font-semibold text-slate-700">Datum</th>
@@ -128,17 +157,38 @@ export default function AnalyticsPage() {
                   <th className="px-4 py-3 font-semibold text-slate-700 text-right">
                     Běžná ZŠ + SVP
                   </th>
+                  <th className="px-4 py-3 font-semibold text-slate-700 text-right">
+                    Tokeny (vstup)
+                  </th>
+                  <th className="px-4 py-3 font-semibold text-slate-700 text-right">
+                    Tokeny (výstup)
+                  </th>
+                  <th className="px-4 py-3 font-semibold text-slate-700 text-right">
+                    Odhad ceny
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {dates.map((key) => {
                   const d = overall[key];
+                  const inT = d?.inputTokens ?? 0;
+                  const outT = d?.outputTokens ?? 0;
+                  const dayCost = estimateCostUsdClient(inT, outT);
                   return (
                     <tr key={key} className="border-b border-slate-100 last:border-0">
                       <td className="px-4 py-3 text-slate-800">{formatDate(key)}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{d?.generated ?? 0}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{d?.basicAndLmp ?? 0}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{d?.basicAndSvp ?? 0}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-slate-600">
+                        {formatTokens(inT)}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-slate-600">
+                        {formatTokens(outT)}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-slate-600">
+                        {formatUsd(dayCost)}
+                      </td>
                     </tr>
                   );
                 })}
@@ -149,9 +199,31 @@ export default function AnalyticsPage() {
                   <td className="px-4 py-3 text-right tabular-nums">{totalsOverall.generated}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{totalsOverall.basicAndLmp}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{totalsOverall.basicAndSvp}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    {formatTokens(totalInput)}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    {formatTokens(totalOutput)}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">{formatUsd(totalCostUsd)}</td>
                 </tr>
               </tfoot>
             </table>
+          </div>
+        )}
+
+        {/* Shrnutí nákladů */}
+        {(totalInput > 0 || totalOutput > 0) && (
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/80 p-4 text-sm">
+            <h3 className="font-semibold text-slate-800">Náklady na tokeny</h3>
+            <p className="mt-1 text-slate-600">
+              Celkem tokenů: <strong>{formatTokens(totalInput)}</strong> vstup,{" "}
+              <strong>{formatTokens(totalOutput)}</strong> výstup. Odhad ceny (Gemini 2.5 Flash Lite):{" "}
+              <strong>{formatUsd(totalCostUsd)}</strong>.
+              {totalsOverall.generated > 0 && (
+                <> Průměr na jeden vygenerovaný list: <strong>{formatUsd(costPerWorksheet)}</strong>.</>
+              )}
+            </p>
           </div>
         )}
 
@@ -218,7 +290,7 @@ export default function AnalyticsPage() {
         )}
 
         <p className="mt-6 text-xs text-slate-500">
-          Vygenerované listy = každé volání generování (z tématu nebo z učebnice). Běžná ZŠ + LMP = listy pro žáky s LMP. Běžná ZŠ + SVP = listy s přidanou zjednodušenou verzí pro SVP.
+          Vygenerované listy = každé volání generování (z tématu nebo z učebnice). Běžná ZŠ + LMP = listy pro žáky s LMP. Běžná ZŠ + SVP = listy s přidanou zjednodušenou verzí pro SVP. Odhad ceny vychází z cen Gemini 2.5 Flash Lite (vstup / výstup za 1M tokenů).
         </p>
         <p className="mt-2 text-xs">
           <a

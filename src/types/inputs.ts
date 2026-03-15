@@ -3,7 +3,7 @@ import type { TaskType, Difficulty, UseCase, OutputType } from "./worksheet";
 /** Počet otázek pro každý typ úlohy (0 = typ není vybrán) */
 export type TaskTypeCounts = Partial<Record<TaskType, number>>;
 
-/** Typ školy – pro budoucí LLM (SVP = zjednodušený výklad, jednodušší látka) */
+/** Typ školy – pro budoucí LLM (SVP = zjednodušená verze textu, stejné učivo) */
 export type SchoolType = "basic" | "lmp";
 
 export interface TopicInput {

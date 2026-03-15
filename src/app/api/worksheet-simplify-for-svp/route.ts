@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { getGeminiModel } from "@/services/geminiClient";
+import { recordGeneration } from "@/lib/analyticsServer";
 import type { Worksheet, WorksheetTask, TaskType } from "@/types/worksheet";
+import { SVP_GENERATION_CONFIG } from "@/lib/geminiWorksheetConfig";
 
 interface RequestBody {
   worksheet: Worksheet;
@@ -10,7 +13,7 @@ interface GeminiTask {
   type: TaskType;
   question: string;
   options?: string[];
-  answer: string | string[];
+  answer?: string | string[];
   explanation?: string;
 }
 
@@ -18,17 +21,18 @@ interface GeminiResponse {
   tasks: GeminiTask[];
 }
 
-function extractJsonFromText(text: string): string {
-  const trimmed = text.trim();
+function parseTasksJson(rawText: string): GeminiResponse {
+  const trimmed = rawText.trim();
+  let jsonStr = trimmed;
   if (trimmed.startsWith("```")) {
     const lines = trimmed.split("\n");
     const withoutFence = lines.slice(1);
     if (withoutFence.length && withoutFence[withoutFence.length - 1].trim().startsWith("```")) {
       withoutFence.pop();
     }
-    return withoutFence.join("\n").trim();
+    jsonStr = withoutFence.join("\n").trim();
   }
-  return trimmed;
+  return JSON.parse(jsonStr) as GeminiResponse;
 }
 
 /**
@@ -68,57 +72,39 @@ export async function POST(req: Request) {
     const tasksDescription = worksheet.tasks
       .map(
         (t, i) =>
-          `Úloha ${i + 1} (typ: ${t.type}): otázka="${(t.question || "").trim()}"${t.options?.length ? `, možnosti=${JSON.stringify(t.options)}` : ""}, správná odpověď=${JSON.stringify(t.answer ?? "")}`
+          `${i + 1}. [${t.type}] "${(t.question || "").trim()}"${t.options?.length ? ` možnosti=${JSON.stringify(t.options)}` : ""} odpověď=${JSON.stringify(t.answer ?? "")}`
       )
       .join("\n");
 
+    const userPrompt = [
+      "Úkol: Zjednoduš jazyk úloh pro žáky se SVP (slabší porozumění psanému textu). Učivo a náročnost zůstávají jako na běžné ZŠ.",
+      "Pravidla – neměň:\n- význam otázky (stejná otázka, jen srozumitelnější formulace)\n- správnou odpověď (u výběru z možností stejný text správné odpovědi, stejné pořadí možností)\n- typ úlohy",
+      "Jak zjednodušovat:\n- krátké věty, běžná slova\n- vyhni se složitým souvětím; jedna věta = jedna informace\n- u otázek používej kratší formulace (řádově do cca 12–15 slov)",
+      `Jazyk: ${lang}. Vrať stejný počet úloh ve stejném pořadí.`,
+      hasEmptyAnswer ? "U úloh s prázdnou odpovědí (kromě draw_picture) doplň krátkou správnou odpověď." : "",
+      "Úlohy:",
+      tasksDescription,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
     const result = await model.generateContent({
-      contents: [
-        {
-          role: "user",
-          parts: [
-            {
-              text: [
-                "Máš pracovní list pro běžnou základní školu. Vytvoř z něj verzi pro žáky se SVP (speciální vzdělávací potřeby): STEJNÉ otázky a STEJNÉ správné odpovědi, pouze zjednodušený jazyk pro snazší porozumění psanému textu.",
-                "",
-                `Jazyk výstupu: List je v jazyce ${lang}. Veškerý text výstupu musí zůstat v tomto jazyce (včetně odpovědí u pravda/nepravda – např. Pravda/Nepravda nebo Ano/Ne v češtině, nikdy anglické true/false).`,
-                "",
-                "Pravidla:",
-                "1) Výstup musí vycházet ze stejných otázek a odpovědí jako běžný list – neměň obsah, význam ani správnou odpověď. Mění se jen formulace (kratší věty, jednodušší slova).",
-                "2) U výběru z možností: zachovej stejný počet možností, stejné pořadí a stejnou správnou odpověď (stejná možnost musí zůstat správná).",
-                "3) U pravda/nepravda: zachovej stejný smysl tvrzení a stejnou odpověď; text odpovědi piš ve stejném jazyce jako zbytek listu (ne anglické true/false).",
-                "4) Počet úloh a jejich typy musí zůstat beze změny. Vrať přesně tolik úloh, kolik je vstupních, ve stejném pořadí.",
-                hasEmptyAnswer
-                  ? "5) U úloh, kde je správná odpověď prázdná (kromě draw_picture), zjednoduš otázku a doplň vhodnou krátkou správnou odpověď v jednoduchém jazyce pro žáky se SVP."
-                  : "",
-                "6) U úloh typu draw_picture (nakresli obrázek) zjednoduš pouze znění otázky, pole answer nech prázdné.",
-                "",
-                "Běžný pracovní list (úlohy):",
-                tasksDescription,
-                "",
-                "Odpověz pouze validním JSON ve tvaru: { \"tasks\": [ { \"type\": \"...\", \"question\": \"...\", \"options\": [...] nebo vynech, \"answer\": \"...\" nebo pole, volitelně \"explanation\": \"...\" } ] }",
-              ]
-                .filter(Boolean)
-                .join("\n"),
-            },
-          ],
-        },
-      ],
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+      generationConfig: SVP_GENERATION_CONFIG,
     });
+
+    const usage = result.response.usageMetadata;
+    const inputTokens = usage?.promptTokenCount ?? 0;
+    const outputTokens = usage?.candidatesTokenCount ?? 0;
 
     const rawText = result.response.text();
     if (!rawText || !rawText.trim()) {
       throw new Error("Model nevrátil žádný text.");
     }
 
-    const jsonText = extractJsonFromText(rawText);
-    if (!jsonText) {
-      throw new Error("V odpovědi modelu chybí JSON.");
-    }
-
     let parsed: GeminiResponse;
     try {
-      parsed = JSON.parse(jsonText) as GeminiResponse;
+      parsed = parseTasksJson(rawText);
     } catch {
       throw new Error("Model nevrátil neplatný JSON.");
     }
@@ -148,6 +134,10 @@ export async function POST(req: Request) {
       taskTypes: worksheet.taskTypes,
       tasks: simplifiedTasks,
     };
+
+    const cookieStore = await cookies();
+    const betaUserId = cookieStore.get("beta_access")?.value;
+    await recordGeneration({ inputTokens, outputTokens }, betaUserId);
 
     return NextResponse.json(simplifiedWorksheet);
   } catch (error) {

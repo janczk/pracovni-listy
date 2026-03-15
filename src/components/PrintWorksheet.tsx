@@ -75,6 +75,12 @@ function StudentBlock({
                 {ui.yes} / {ui.no}
               </p>
             )}
+            {task.type === "fill_in" && (
+              <div
+                className="mt-2 min-h-[3.5rem] border-b border-slate-300"
+                aria-hidden="true"
+              />
+            )}
             {task.type === "draw_picture" && (
               <div
                 className="mt-3 min-h-[12rem] border border-dashed border-slate-300 rounded-lg"

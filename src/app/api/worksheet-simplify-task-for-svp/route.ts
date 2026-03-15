@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getGeminiModel } from "@/services/geminiClient";
 import type { WorksheetTask, TaskType } from "@/types/worksheet";
+import { REGENERATE_GENERATION_CONFIG } from "@/lib/geminiWorksheetConfig";
 
 interface RequestBody {
   task: WorksheetTask;
@@ -60,19 +61,19 @@ export async function POST(req: Request) {
           parts: [
             {
               text: [
-                "Máš jednu úlohu z pracovního listu pro běžnou ZŠ. Vytvoř její verzi pro žáky se SVP: STEJNÁ otázka a STEJNÁ správná odpověď, pouze zjednodušený jazyk.",
+                "Máš jednu úlohu z pracovního listu pro běžnou ZŠ. Vytvoř její verzi pro žáky se SVP (slabší porozumění psanému textu). Učivo a náročnost zůstávají stejné – mění se jen formulace (zjednodušený jazyk).",
                 "",
-                "Jazyk výstupu: Veškerý text (otázka, možnosti, odpověď) musí zůstat ve stejném jazyce jako původní úloha. U pravda/nepravda piš odpověď v tomto jazyce (např. Pravda/Nepravda nebo Ano/Ne), nikdy anglické true/false.",
+                "Pravidla – neměň: význam otázky, správnou odpověď (u výběru stejný text i pořadí možností), typ úlohy. Jak zjednodušovat: krátké věty, běžná slova; vyhni se složitým souvětím; jedna věta = jedna informace; u otázky kratší formulace (řádově do cca 12–15 slov).",
                 "",
-                "Pravidla:",
-                "1) Neměň obsah, význam ani správnou odpověď. Mění se jen formulace (kratší věty, jednodušší slova).",
-                "2) U výběru z možností: zachovej stejný počet možností, stejné pořadí a stejnou správnou odpověď.",
-                "3) U pravda/nepravda: zachovej stejný smysl a stejnou odpověď; text odpovědi ve stejném jazyce jako zbytek (ne true/false).",
+                "Jazyk výstupu: Veškerý text ve stejném jazyce jako původní úloha. U pravda/nepravda piš odpověď v tomto jazyce (např. Pravda/Nepravda), nikdy anglické true/false.",
+                "",
+                "1) U výběru z možností: stejný počet, pořadí a správná odpověď.",
+                "2) U pravda/nepravda: stejný smysl a stejná odpověď ve stejném jazyce.",
                 hasEmptyAnswer && task.type !== "draw_picture"
-                  ? "4) Správná odpověď je prázdná – zjednoduš otázku a doplň vhodnou krátkou správnou odpověď v jednoduchém jazyce."
-                  : "4) Zachovej typ úlohy.",
+                  ? "3) Správná odpověď je prázdná – zjednoduš otázku a doplň krátkou správnou odpověď v jednoduchém jazyce."
+                  : "3) Zachovej typ úlohy.",
                 task.type === "draw_picture"
-                  ? "5) U draw_picture zjednoduš pouze znění otázky, pole answer nech prázdné."
+                  ? "4) U draw_picture zjednoduš pouze znění otázky, pole answer nech prázdné."
                   : "",
                 "",
                 "Úloha:",
@@ -86,6 +87,7 @@ export async function POST(req: Request) {
           ],
         },
       ],
+      generationConfig: REGENERATE_GENERATION_CONFIG,
     });
 
     const rawText = result.response.text();

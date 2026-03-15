@@ -138,6 +138,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e2e8f0",
   },
+  /** Prostor pro doplňování (jedno slovo/rok) – šířka celá, výška podle délky odpovědi */
+  fillInSpace: {
+    minHeight: 48,
+    marginTop: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+  },
   /** Větší prostor pro nákres u úlohy typu Nakresli obrázek */
   drawingSpace: {
     minHeight: 200,
@@ -292,6 +299,19 @@ export function WorksheetPdfDocument({
                 <Text style={[styles.trueFalseOption, capsStyle]}>{ui.yes}</Text>
                 <Text style={[styles.trueFalseOptionNe, capsStyle]}>{ui.no}</Text>
               </View>
+            )}
+            {task.type === "fill_in" && (
+              <View
+                style={[
+                  styles.fillInSpace,
+                  {
+                    minHeight: Math.min(
+                      100,
+                      Math.max(48, (String(task.answer ?? "").length + 2) * 6)
+                    ),
+                  },
+                ]}
+              />
             )}
             {(task.type === "short_answer" || task.type === "reading_questions") && (
               <View style={styles.writingSpace} />

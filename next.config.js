@@ -4,7 +4,11 @@ const path = require("path");
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@react-pdf/renderer"],
-  webpack: (config, { isServer }) => {
+  // V developmentu vypnout webpack cache – předchází chybě "Cannot find module './XXX.js'"
+  webpack: (config, { isServer, dev }) => {
+    if (dev) {
+      config.cache = false;
+    }
     if (!isServer) {
       config.resolve.alias["@react-pdf/renderer$"] = path.join(
         __dirname,

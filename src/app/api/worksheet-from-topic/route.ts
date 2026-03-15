@@ -4,10 +4,15 @@ import { v4 as uuidv4 } from "uuid";
 import { getGeminiModel } from "@/services/geminiClient";
 import type { TopicInput } from "@/types/inputs";
 import type { Worksheet, WorksheetTask, TaskType } from "@/types/worksheet";
-import { createMockWorksheet } from "@/lib/mockData";
 import { recordGeneration } from "@/lib/analyticsServer";
 import { randomizeTaskOrder } from "@/lib/taskOrder";
 import { buildTopicTitle, getWorksheetLocale } from "@/lib/worksheetLocale";
+import {
+  WORKSHEET_GENERATION_CONFIG,
+  getTaskTypeLinesForPrompt,
+  getTaskTypeLinesForLmp,
+  LMP_SYSTEM_APPENDIX,
+} from "@/lib/geminiWorksheetConfig";
 
 type RequestBody = TopicInput;
 
@@ -15,7 +20,7 @@ interface GeminiTask {
   type: TaskType;
   question: string;
   options?: string[];
-  answer: string | string[];
+  answer?: string | string[];
   explanation?: string;
 }
 
@@ -23,18 +28,18 @@ interface GeminiResponse {
   tasks: GeminiTask[];
 }
 
-function extractJsonFromText(text: string): string {
-  const trimmed = text.trim();
+function parseTasksJson(rawText: string): GeminiResponse {
+  const trimmed = rawText.trim();
+  let jsonStr = trimmed;
   if (trimmed.startsWith("```")) {
     const lines = trimmed.split("\n");
-    // Remove first line (``` or ```json) and any closing ``` at the end
     const withoutFence = lines.slice(1);
     if (withoutFence.length && withoutFence[withoutFence.length - 1].trim().startsWith("```")) {
       withoutFence.pop();
     }
-    return withoutFence.join("\n").trim();
+    jsonStr = withoutFence.join("\n").trim();
   }
-  return trimmed;
+  return JSON.parse(jsonStr) as GeminiResponse;
 }
 
 export async function POST(req: Request) {
@@ -65,71 +70,51 @@ export async function POST(req: Request) {
       (body.taskTypeCounts.reading_questions ?? 0) +
       (body.taskTypeCounts.draw_picture ?? 0);
 
-    // Pro LMP generujeme podle RVP ZV–LMP (příloha upravující vzdělávání žáků s LMP); pro běžnou ZŠ standardní.
     const isLmp = body.schoolType === "lmp";
     const audienceInstruction = isLmp
-      ? [
-          "Tento výstup je pro ZÁKLADNÍ ŠKOLU PRO ŽÁKY S LEHKÝM MENTÁLNÍM POSTIŽENÍM (LMP), v souladu s RVP ZV–LMP.",
-          "Respektuj sníženou úroveň rozumových schopností žáků: u nich převažuje myšlení názorné a konkrétní, logické uvažování je spjaté s realitou; abstrakce omezená.",
-          "Pravidla pro text: JEDNODUCHÁ SLOVA, KRÁTKÉ VĚTY (řádově do 10–12 slov). Vyhni se cizím a odborným výrazům, nebo je hned jednoduše vysvětli.",
-          "Úlohy mají mít činnostní povahu, být prakticky zaměřené a využitelné v běžném životě. U každé úlohy méně pojmů, JASNÉ A STRUČNÉ instrukce, jeden krok nebo jeden jasný cíl.",
-          "Preferuj konkrétní a názorné úlohy před abstraktními. Obtížnost a tempo přizpůsob možnostem žáků s LMP; obsah musí být pro ně dosažitelný.",
-        ].join(" ")
-      : [
-          "Tento výstup je pro BĚŽNOU ZÁKLADNÍ ŠKOLU.",
-          "Otázky a odpovědi mají odpovídat standardní úrovni žáků bez speciálních potřeb.",
-        ].join(" ");
+      ? "Výstup pro žáky s LMP (RVP ZV–LMP)."
+      : "Tento výstup je pro BĚŽNOU ZÁKLADNÍ ŠKOLU. Standardní úroveň žáků bez speciálních potřeb.";
+
+    const systemInstruction = [
+      "Jsi učitel na základní škole. Vytváříš pracovní listy: krátké úlohy k tématu.",
+      `Jazyk: VEŠKERÝ obsah (otázky, možnosti, odpovědi, vysvětlení, pravda/nepravda) musí být výhradně ve zvoleném jazyce. Žádná angličtina ani míchání jazyků.`,
+      "Pravidla: Všechny otázky k danému tématu. U osoby jako téma – pouze tato osoba. Žádný úvodní text, pouze seznam úloh.",
+      ...(isLmp
+        ? [LMP_SYSTEM_APPENDIX, ...getTaskTypeLinesForLmp(body.taskTypeCounts as Record<string, number>)]
+        : getTaskTypeLinesForPrompt(body.taskTypeCounts as Record<string, number>)),
+    ].join("\n");
+
+    const userPrompt = [
+      `Téma: "${body.topic}".`,
+      `Předmět: ${body.subject}, ročník: ${body.grade}. Účel: ${body.useCase}. Obtížnost: ${body.difficulty}.`,
+      `Jazyk výstupu: ${body.language}.`,
+      audienceInstruction,
+      "",
+      "Počty úloh (drž se přesně):",
+      JSON.stringify(body.taskTypeCounts),
+      "",
+      `Vrať přesně ${totalRequested} úloh v poli tasks.`,
+    ].join("\n");
 
     const result = await model.generateContent({
-      contents: [
-        {
-          role: "user",
-          parts: [
-            {
-              text: [
-                "Jsi učitel na základní škole.",
-                `Vytvoř pracovní list k tématu: "${body.topic}".`,
-                `Předmět: ${body.subject}, ročník: ${body.grade}.`,
-                `Účel: ${body.useCase}. Obtížnost: ${body.difficulty}.`,
-                "",
-                `DŮLEŽITÉ – Jazyk výstupu: Uživatel zvolil jazyk ${body.language}. VEŠKERÝ obsah pracovního listu určený žákům musí být výhradně v tomto jazyce: otázky, texty možností u výběru, správné odpovědi, vysvětlení i označení u pravda/nepravda (např. v češtině Pravda/Nepravda nebo Ano/Ne). Žádné slovo v angličtině ani v jiném jazyce – žádné míchání jazyků. Toto pravidlo platí pro všechny typy úloh bez výjimky.`,
-                "",
-                audienceInstruction,
-                "",
-                "Všechny otázky musí být výhradně k tomuto tématu.",
-                "Pokud je téma osoba (např. Václav Klaus), všechny otázky se musí týkat pouze této osoby, ne jiných osob (např. Karel IV.).",
-                "Vytvoř pouze seznam úloh (questions) bez úvodního textu.",
-                "Drž se počtů typů úloh (taskTypeCounts):",
-                JSON.stringify(body.taskTypeCounts),
-                "Typy úloh:",
-                "- multiple_choice: výběr z možností A-D, přesně 3–4 možnosti.",
-                `- true_false: tvrzení s dvěma možnostmi a správnou odpovědí. Možnosti i odpověď piš VŽDY v jazyce ${body.language} (např. v češtině \"Pravda\"/\"Nepravda\" nebo \"Ano\"/\"Ne\", nikdy nepoužívej anglické true/false).`,
-                "- fill_in: doplňovačka s jedním krátkým slovem nebo rokem.",
-                "- short_answer: krátká otevřená odpověď (1–2 věty).",
-                "- reading_questions: otázky k textu bez nutnosti dalšího textu.",
-                '- draw_picture: úloha, kde má žák něco NAKRESLIT (schéma, obrázek, náčrtek). Formuluj otázku tak, aby výstupem žáka byl nákres (např. "Nakresli jednoduché schéma fotosyntézy.", "Nakresli potravní řetězec v lese."). Pole "answer" neuváděj nebo nech prázdné – odpověď žáka je kresba.',
-                "",
-                "Odpověz jako validní JSON ve tvaru:",
-                '{ "tasks": [ { "type": "...", "question": "...", "options": ["A", "B"], "answer": "...", "explanation": "..." } ] }',
-                "Použij pouze ty typy úloh, které mají v taskTypeCounts počet větší než 0.",
-                `Celkový počet úloh by měl být přibližně ${totalRequested}, nejvýše o 2 více.`,
-              ].join("\n"),
-            },
-          ],
-        },
-      ],
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+      systemInstruction,
+      generationConfig: WORKSHEET_GENERATION_CONFIG,
     });
 
+    const usage = result.response.usageMetadata;
+    const inputTokens = usage?.promptTokenCount ?? 0;
+    const outputTokens = usage?.candidatesTokenCount ?? 0;
+
     const rawText = result.response.text();
-    const jsonText = extractJsonFromText(rawText);
-    const parsed = JSON.parse(jsonText) as GeminiResponse;
+    const parsed = parseTasksJson(rawText);
 
     const tasks: WorksheetTask[] = (parsed.tasks ?? []).map((t) => ({
       id: uuidv4(),
       type: t.type,
-      question: t.question,
+      question: t.question ?? "",
       options: t.options,
-      answer: t.type === "draw_picture" ? "" : t.answer,
+      answer: t.type === "draw_picture" ? "" : (t.answer ?? ""),
       explanation: t.explanation,
     }));
 
@@ -166,6 +151,8 @@ export async function POST(req: Request) {
       {
         generated: 1,
         basicAndLmp: body.schoolType === "lmp" ? 1 : 0,
+        inputTokens,
+        outputTokens,
       },
       betaUserId
     );

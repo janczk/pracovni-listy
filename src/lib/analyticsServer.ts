@@ -2,16 +2,34 @@ import { readFile, writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 
 // Typy
-export type DailyStats = { generated: number; basicAndLmp: number; basicAndSvp: number };
+export type DailyStats = {
+  generated: number;
+  basicAndLmp: number;
+  basicAndSvp: number;
+  inputTokens: number;
+  outputTokens: number;
+};
 export type StatsByDate = Record<string, DailyStats>;
-export type RecordPayload = { generated?: number; basicAndLmp?: number; basicAndSvp?: number };
+export type RecordPayload = {
+  generated?: number;
+  basicAndLmp?: number;
+  basicAndSvp?: number;
+  inputTokens?: number;
+  outputTokens?: number;
+};
 
 /** Celá uložená struktura: celkové statistiky + podle beta uživatelů. */
 export type StatsPayload = { overall: StatsByDate; byUser: Record<string, StatsByDate> };
 
 const FILENAME = "usage-stats.json";
 const KV_KEY = "usage-stats";
-const defaultDay: DailyStats = { generated: 0, basicAndLmp: 0, basicAndSvp: 0 };
+const defaultDay: DailyStats = {
+  generated: 0,
+  basicAndLmp: 0,
+  basicAndSvp: 0,
+  inputTokens: 0,
+  outputTokens: 0,
+};
 
 function getDataPath(): string {
   return join(process.cwd(), "data", FILENAME);
@@ -23,21 +41,53 @@ function getTodayKey(): string {
 
 function ensureDay(stats: StatsByDate, dateKey: string): DailyStats {
   if (!stats[dateKey]) stats[dateKey] = { ...defaultDay };
-  return stats[dateKey];
+  const d = stats[dateKey];
+  if (d.inputTokens == null) d.inputTokens = 0;
+  if (d.outputTokens == null) d.outputTokens = 0;
+  return d;
+}
+
+function normalizeDay(d: unknown): DailyStats {
+  if (!d || typeof d !== "object") return { ...defaultDay };
+  const o = d as Record<string, unknown>;
+  return {
+    generated: Number(o.generated) || 0,
+    basicAndLmp: Number(o.basicAndLmp) || 0,
+    basicAndSvp: Number(o.basicAndSvp) || 0,
+    inputTokens: Number(o.inputTokens) || 0,
+    outputTokens: Number(o.outputTokens) || 0,
+  };
+}
+
+function normalizeStatsByDate(stats: Record<string, unknown>): StatsByDate {
+  const out: StatsByDate = {};
+  for (const [k, v] of Object.entries(stats)) {
+    out[k] = normalizeDay(v);
+  }
+  return out;
 }
 
 function normalizePayload(parsed: unknown): StatsPayload {
   if (parsed && typeof parsed === "object" && "overall" in parsed && "byUser" in parsed) {
-    const p = parsed as StatsPayload;
+    const p = parsed as { overall?: Record<string, unknown>; byUser?: Record<string, Record<string, unknown>> };
     return {
-      overall: typeof p.overall === "object" && p.overall !== null ? p.overall : {},
-      byUser: typeof p.byUser === "object" && p.byUser !== null ? p.byUser : {},
+      overall: normalizeStatsByDate(
+        typeof p.overall === "object" && p.overall !== null ? p.overall : {}
+      ),
+      byUser:
+        typeof p.byUser === "object" && p.byUser !== null
+          ? Object.fromEntries(
+              Object.entries(p.byUser).map(([uid, dates]) => [uid, normalizeStatsByDate(dates)])
+            )
+          : {},
     };
   }
-  // Starý formát: celý objekt = overall podle dat
-  const asByDate = parsed as StatsByDate;
+  const asByDate = parsed as Record<string, unknown>;
   return {
-    overall: typeof asByDate === "object" && asByDate !== null ? asByDate : {},
+    overall:
+      typeof asByDate === "object" && asByDate !== null
+        ? normalizeStatsByDate(asByDate)
+        : {},
     byUser: {},
   };
 }
@@ -143,6 +193,8 @@ export async function recordGeneration(payload: RecordPayload, betaUserId?: stri
   if (payload.generated != null) dayOverall.generated += payload.generated;
   if (payload.basicAndLmp != null) dayOverall.basicAndLmp += payload.basicAndLmp;
   if (payload.basicAndSvp != null) dayOverall.basicAndSvp += payload.basicAndSvp;
+  if (payload.inputTokens != null) dayOverall.inputTokens += payload.inputTokens;
+  if (payload.outputTokens != null) dayOverall.outputTokens += payload.outputTokens;
 
   if (betaUserId && betaUserId.trim()) {
     const uid = betaUserId.trim().toLowerCase();
@@ -151,6 +203,8 @@ export async function recordGeneration(payload: RecordPayload, betaUserId?: stri
     if (payload.generated != null) dayUser.generated += payload.generated;
     if (payload.basicAndLmp != null) dayUser.basicAndLmp += payload.basicAndLmp;
     if (payload.basicAndSvp != null) dayUser.basicAndSvp += payload.basicAndSvp;
+    if (payload.inputTokens != null) dayUser.inputTokens += payload.inputTokens;
+    if (payload.outputTokens != null) dayUser.outputTokens += payload.outputTokens;
   }
 
   const ok = await writePayload(data);
