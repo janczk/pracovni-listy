@@ -72,17 +72,21 @@ export function getTaskTypeLinesForPrompt(taskTypeCounts: Record<string, number>
     .map((type) => `- ${TASK_TYPE_LINES[type]}`);
 }
 
-/** Krátké LMP-specifické doplnění system instruction (~50 tokenů). */
-export const LMP_SYSTEM_APPENDIX =
-  "Pro LMP: velmi jednoduchý jazyk, krátké věty (max cca 10 slov), jedna otázka = jedna informace. Náročnost cca o 1–2 ročníky níže. Preferuj rozpoznání a doplnění; u otevřených úloh jen jednoduché konkrétní otázky, odpověď max 1 věta.";
+/** LMP: pravidla jazyka, kognice a formulací. Žádné „proč“, krátké věty, konkrétní zadání. */
+export const LMP_SYSTEM_APPENDIX = [
+  "Pro LMP: velmi jednoduchý jazyk, krátké věty (max cca 10 slov), jedna otázka = jedna informace.",
+  "Náročnost cca o 1–2 ročníky níže. Preferuj rozpoznání a doplnění.",
+  "Zakázáno: otázky typu „proč“, „vysvětli“, „co to znamená“; abstraktní obraty („na znamení“, „symbolizující“).",
+  "U doplňování: celá věta max cca 10 slov, doplňuje se jen jedno slovo nebo rok. U draw_picture: konkrétní pokyn (co nakreslit), ne „symbolizující“.",
+].join(" ");
 
-/** Pro LMP: kratší popisy typů (pouze odlišné od TASK_TYPE_LINES). */
+/** Pro LMP: přísnější popisy typů (bez „proč“, krátké formulace). */
 const TASK_TYPE_LINES_LMP: Partial<Record<string, string>> = {
   multiple_choice: "multiple_choice: 3–4 krátké možnosti, jednoduchý jazyk.",
-  fill_in: "fill_in: jen jedno slovo nebo rok.",
-  short_answer: "short_answer: pro LMP jen jedna jednoduchá otázka, odpověď max 1 věta.",
-  reading_questions: "reading_questions: pro LMP jen jednoduchá konkrétní otázka, odpověď max 1 věta.",
-  draw_picture: 'draw_picture: jednoduchá úloha – žák něco nakreslí. Pole "answer" prázdné.',
+  fill_in: "fill_in: věta max cca 10 slov, doplňuje se jen jedno slovo nebo rok; žádné abstraktní obraty.",
+  short_answer: "short_answer: pro LMP otázka max 10 slov, jedna myšlenka; nikdy „proč“ ani „vysvětli“. Odpověď max 1 věta.",
+  reading_questions: "reading_questions: pro LMP jen konkrétní otázka (kdo, kde, kdy, co); nikdy „proč“ ani „vysvětli“. Odpověď max 1 věta.",
+  draw_picture: 'draw_picture: konkrétní pokyn (co nakreslit), ne „symbolizující“ ani abstraktní slova. Pole "answer" prázdné.',
 };
 
 /**

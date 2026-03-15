@@ -77,7 +77,7 @@ function StudentBlock({
             )}
             {task.type === "fill_in" && (
               <div
-                className="mt-2 min-h-[3.5rem] border-b border-slate-300"
+                className="mt-2 min-h-[5rem] border-b border-slate-300"
                 aria-hidden="true"
               />
             )}

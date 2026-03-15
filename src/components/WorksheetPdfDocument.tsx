@@ -138,9 +138,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e2e8f0",
   },
-  /** Prostor pro doplňování (jedno slovo/rok) – šířka celá, výška podle délky odpovědi */
+  /** Prostor pro doplňování (jedno slovo/rok) – delší řádek, aby měli žáci dost místa na doplnění */
   fillInSpace: {
-    minHeight: 48,
+    minHeight: 72,
     marginTop: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#e2e8f0",
@@ -306,8 +306,8 @@ export function WorksheetPdfDocument({
                   styles.fillInSpace,
                   {
                     minHeight: Math.min(
-                      100,
-                      Math.max(48, (String(task.answer ?? "").length + 2) * 6)
+                      120,
+                      Math.max(72, (String(task.answer ?? "").length + 4) * 8)
                     ),
                   },
                 ]}
