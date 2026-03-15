@@ -11,7 +11,7 @@ if (!apiKey) {
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 // Hlavní model, který budeme používat v aplikaci
-const MODEL_NAME = "gemini-2.5-flash";
+const MODEL_NAME = "gemini-2.5-flash-lite";
 
 // Pomocná funkce pro získání modelu
 export function getGeminiModel() {
